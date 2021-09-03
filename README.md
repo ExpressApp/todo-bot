@@ -1,5 +1,7 @@
 # todo-bot
 
+[![codecov](https://codecov.io/gh/ExpressApp/todo-bot/branch/master/graph/badge.svg?token=PTRJR2ITHW)](https://codecov.io/gh/ExpressApp/todo-bot)
+
 Бот создан на базе шаблона [async-box](https://github.com/ExpressApp/async-box).
 
 ## Описание
