@@ -1,5 +1,7 @@
 # todo-bot
 
+[![codecov](https://codecov.io/gh/ExpressApp/proxier-bot/branch/master/graph/badge.svg?token=93SD19SQQL)](https://codecov.io/gh/ExpressApp/proxier-bot)
+
 Бот создан на базе шаблона [async-box](https://github.com/ExpressApp/async-box).
 
 ## Описание
