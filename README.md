@@ -74,7 +74,7 @@ services:
     networks:
       - express_bots_storages
     volumes:
-      - /opt/express/botx/storages/redisdata:/var/lib/postgresql/data
+      - /opt/express/bots/storages/redisdata:/var/lib/postgresql/data
     logging:
       driver: "json-file"
       options:
