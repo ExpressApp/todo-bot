@@ -1,6 +1,5 @@
 """Helpers for building bot answer messages."""
 from botx import Message, SendingMessage
-from loguru import logger
 
 from app.bot.commands.listing import CommandsEnum
 from app.resources import strings
@@ -25,11 +24,9 @@ def default_message(message: Message) -> SendingMessage:
 
 def chat_created_message(message: Message) -> SendingMessage:
     """Build message which should be send to chat with new user."""
-    logger.bind(botx_bot=True, payload=message).warning("CREATE_CHAT")
+    text = strings.CHAT_CREATED_TEXT.format(bot_name=strings.BOT_NAME)
 
-    answer = SendingMessage.from_message(
-        text=strings.CHAT_CREATED_TEXT, message=message
-    )
+    answer = SendingMessage.from_message(text=text, message=message)
 
     answer.add_bubble(
         label="Создать задачу",
