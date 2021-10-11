@@ -8,7 +8,6 @@ from app.bot.commands import common
 from app.bot.commands.user import create_task, edit_task, task_list
 from app.bot.dependencies.crud import auto_models_update
 from app.bot.dependencies.errors import internal_error_handler
-from app.bot.dependencies.external_cts import message_from_current_cts
 from app.resources import strings
 from app.settings.config import get_app_settings
 
@@ -18,7 +17,7 @@ redis_storage = RedisStorage(redis_dsn=str(config.REDIS_DSN), prefix="to-do-bot"
 logger.debug(redis_storage.redis_dsn)
 bot = Bot(
     bot_accounts=config.BOT_CREDENTIALS,
-    dependencies=[Depends(message_from_current_cts), Depends(auto_models_update)],
+    dependencies=[Depends(auto_models_update)],
 )
 
 bot.add_middleware(

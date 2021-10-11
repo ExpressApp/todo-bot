@@ -70,7 +70,7 @@ TASK_LIST_LABEL = "Посмотреть список задач"
 RETURN_TO_TASK_LIST_LABEL = " Вернуться к списку задач"
 
 TASK_LIST_DESCRIPTION = "Все мои задачи"
-CHAT_CREATED_TEXT = read_text("chat_created.md")
+CHAT_CREATED_TEXT = lookup.get_template("chat_created.txt.mako")
 CREATE_TASK_DESCRIPTION = "Создать новую задачу"
 TASKS_INFORMATION_DESCRIPTION = "Справка по командам"
 
