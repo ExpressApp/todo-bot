@@ -3,7 +3,7 @@ import io
 from pathlib import Path
 from uuid import UUID, uuid4
 
-import aiofiles
+from aiofiles import os as async_os
 from botx import File
 
 from app.settings.config import get_app_settings
@@ -52,7 +52,7 @@ class FileStorage:
         file_path = self._get_path_to_file(file_uuid)
 
         if file_path.exists():
-            await aiofiles.os.remove(file_path)
+            await async_os.remove(file_path)
         else:
             raise FileNotFoundError
 
