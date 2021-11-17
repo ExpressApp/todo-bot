@@ -13,8 +13,8 @@ python = "~3.8"
 botx = "~0.19.0"
 botx-fsm = { git = "https://github.com/ExpressApp/pybotx-fsm", rev = "0.1.4" }
 
-fastapi = "~0.61.2"
-uvicorn = "~0.12.3"
+fastapi = "~0.70.0"
+uvicorn = "~0.15.0"
 python-multipart = "~0.0.5"
 
 tortoise-orm = "~0.16.18"
