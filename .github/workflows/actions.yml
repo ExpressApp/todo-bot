@@ -41,8 +41,9 @@ jobs:
           source .venv/bin/activate
           ./scripts/test --cov-report=xml
         env:
-          TEST_DB_CONNECTION: postgres://postgres:postgres@localhost/postgres
+          POSTGRES_DSN: postgres://postgres:postgres@localhost/postgres
           REDIS_DSN: redis://localhost/0
+          BOT_CREDENTIALS: cts.exmaple.com@secret@0452ca08-638e-5d24-a1be-2cc9f2b7fb37
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2

@@ -1,30 +1,28 @@
 # todo-bot
 
-[![codecov](https://codecov.io/gh/ExpressApp/todo-bot/branch/master/graph/badge.svg?token=PTRJR2ITHW)](https://codecov.io/gh/ExpressApp/todo-bot)
-
 Бот создан на базе шаблона [async-box](https://github.com/ExpressApp/async-box).
 
 ## Описание
 
-Бот, позволяющий составлять список дел на день, следить за их выполнением.
+Bot to store TODOs
 
-## Инструкция по развёртыванию ToDo-бота
+## Инструкция по развёртыванию todo-bot
 
 **NOTE**: *Если вы планируете развёртывать несколько ботов на сервере, используйте
 продвинутый вариант инструкции: [advanced-deploy.md](advanced-deploy.md).*
 
 1. Воспользуйтесь инструкцией [Руководство 
    администратора](https://express.ms/admin_guide.pdf) `-> Эксплуатация корпоративного 
-   сервера -> Управление контактами -> Чат-боты`, чтобы создать бота в админке 
-   eXpress. 
-   Получите `secret_key` и `bot_id` кликнув на имя созданного бота. 
-   Получите `cts_host` в строке браузера, когда вы в админке. 
-   
+   сервера -> Управление контактами -> Чат-боты`, чтобы создать бота в панели 
+   администратора eXpress. 
+   Получите `secret_key` и `bot_id` нажав на имя созданного бота. 
+   Получите `cts_host` в строке браузера, когда вы в панели администратора. 
+
 
 2. Скачайте репозиторий на сервер:
 
 ```bash
-git clone https://github.com/ExpressApp/todo-bot.git /opt/express/bots/todo-bot
+git clone <THIS_REPOSITORY> /opt/express/bots/todo-bot
 cd /opt/express/bots/todo-bot
 ```
 

@@ -1,165 +1,155 @@
-import base64
-import io
-import random
-import string
-import uuid
+from http import HTTPStatus
+from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, List, Optional
+from unittest.mock import AsyncMock
+from uuid import UUID, uuid4
 
 import httpx
 import pytest
+import respx
+from alembic import config as alembic_config
 from asgi_lifespan import LifespanManager
-from botx import Bot, BotXCredentials, ChatCreatedEvent, File
-from botx.testing import MessageBuilder, TestClient
-from dotenv import load_dotenv
-from fastapi import FastAPI
-from pytest_cov.plugin import StoreReport
+from botx import (
+    Bot,
+    BotAccount,
+    Chat,
+    ChatTypes,
+    IncomingMessage,
+    UserDevice,
+    UserSender,
+    lifespan_wrapper,
+)
+from botx.models.commands import BotCommand
+from sqlalchemy.ext.asyncio import AsyncSession
 
-load_dotenv(".env")
+from app.caching.redis_repo import RedisRepo
+from app.main import get_application
+from app.settings import settings
 
 
-pytest_plugins = ["tests.fixtures.printer", "tests.fixtures.database"]
+@pytest.fixture
+def db() -> Generator:
+    alembic_config.main(argv=["upgrade", "head"])
+    yield
+    alembic_config.main(argv=["downgrade", "base"])
 
 
-def pytest_addoption(parser):
-    """Add options to control coverage."""
+@pytest.fixture
+async def db_session(bot: Bot) -> AsyncSession:
+    async with bot.state.db_session_factory() as session:
+        yield session
 
-    def fake_validate_report(_):  # pragma: no cover
-        return "term-missing", "skip-covered"
 
-    group = parser.getgroup(
-        "cov", "coverage reporting with distributed testing support"
+@pytest.fixture
+async def redis_repo(bot: Bot) -> RedisRepo:
+    return bot.state.redis_repo
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_collection_modifyitems(items: List[pytest.Function]) -> None:
+    for item in items:
+        if item.get_closest_marker("db"):
+            item.fixturenames = ["db"] + item.fixturenames
+
+
+def mock_authorization(
+    host: str,
+    bot_id: UUID,
+) -> None:
+    respx.get(f"https://{host}/api/v2/botx/bots/{bot_id}/token",).mock(
+        return_value=httpx.Response(
+            HTTPStatus.OK,
+            json={
+                "status": "ok",
+                "result": "token",
+            },
+        ),
     )
-    group.addoption(
-        "--poco",
-        action=StoreReport,
-        type=fake_validate_report,
-        help="Short alias for option term-missing:skip-covered",
-    )
 
 
 @pytest.fixture
-def app(migrations) -> FastAPI:
-    from app.main import get_application
+async def bot(
+    respx_mock: Callable[..., Any],  # We can't apply pytest mark to fixture
+) -> AsyncGenerator[Bot, None]:
+    fastapi_app = get_application()
+    built_bot = fastapi_app.state.bot
 
-    return get_application()
+    for bot_account in built_bot.bot_accounts:
+        mock_authorization(bot_account.host, bot_account.id)
 
+    built_bot.answer_message = AsyncMock(return_value=uuid4())
 
-@pytest.fixture(autouse=True)
-async def http_client(app: FastAPI) -> httpx.AsyncClient:
-    async with LifespanManager(app):
-        async with httpx.AsyncClient(
-            base_url="http://testserver", app=app
-        ) as app_client:
-            yield app_client
-
-
-@pytest.fixture(autouse=True)
-async def botx_client(bot: Bot) -> TestClient:
-    with TestClient(bot) as client:
-        yield client
+    async with LifespanManager(fastapi_app):
+        yield built_bot
 
 
 @pytest.fixture
-def secret_key() -> str:
-    return "secret"
+def bot_id() -> UUID:
+    return settings.BOT_CREDENTIALS[0].id
 
 
 @pytest.fixture
-def bot(app: FastAPI, builder: MessageBuilder, secret_key: str) -> Bot:
-    bot_app = app.state.bot
-    bot_app.bot_accounts = [
-        BotXCredentials(
-            host=builder.user.host, secret_key=secret_key, bot_id=builder.bot_id
-        )
-    ]
-    return bot_app
-
-
-@pytest.fixture
-def builder(bot_id: uuid.UUID, host: str, group_chat_id: uuid.UUID) -> MessageBuilder:
-    builder = MessageBuilder(bot_id=bot_id)
-    builder.user.host = host
-    builder.user.group_chat_id = group_chat_id
-    return builder
-
-
-@pytest.fixture(scope="session")
-def bot_id() -> uuid.UUID:
-    return uuid.uuid4()
-
-
-@pytest.fixture(scope="session")
 def host() -> str:
-    return "cts.testing.dev"
-
-
-@pytest.fixture()
-def group_chat_id() -> uuid.UUID:
-    return uuid.uuid4()
+    return settings.BOT_CREDENTIALS[0].host
 
 
 @pytest.fixture
-def chat_created_data() -> ChatCreatedEvent:
-    def generate_acsii_name() -> str:
-        return "".join(
-            random.choice(string.ascii_lowercase) for i in range(random.randint(5, 10))
+def incoming_message_factory(
+    bot_id: UUID,
+    host: str,
+) -> Callable[..., IncomingMessage]:
+    def factory(
+        *,
+        body: str = "",
+        ad_login: Optional[str] = None,
+        ad_domain: Optional[str] = None,
+    ) -> IncomingMessage:
+        return IncomingMessage(
+            bot=BotAccount(
+                id=bot_id,
+                host=host,
+            ),
+            sync_id=uuid4(),
+            source_sync_id=None,
+            body=body,
+            data={},
+            metadata={},
+            sender=UserSender(
+                huid=uuid4(),
+                ad_login=ad_login,
+                ad_domain=ad_domain,
+                username=None,
+                is_chat_admin=True,
+                is_chat_creator=True,
+                device=UserDevice(
+                    manufacturer=None,
+                    device_name=None,
+                    os=None,
+                    pushes=None,
+                    timezone=None,
+                    permissions=None,
+                    platform=None,
+                    platform_package_id=None,
+                    app_version=None,
+                    locale=None,
+                ),
+            ),
+            chat=Chat(
+                id=uuid4(),
+                type=ChatTypes.PERSONAL_CHAT,
+            ),
+            raw_command=None,
         )
 
-    def generate_username() -> str:
-        return " ".join(
-            (generate_acsii_name().capitalize(), generate_acsii_name().capitalize())
-        )
-
-    creator_huid = uuid.uuid4()
-    users = [
-        {
-            "huid": uuid.uuid4(),
-            "user_kind": random.choice(["user", "botx"]),
-            "name": generate_username(),
-            "admin": random.choice([True, False]),
-        }
-        for _ in range(random.randrange(2, 6))
-    ]
-    users.append(
-        {
-            "huid": creator_huid,
-            "user_kind": "user",
-            "name": generate_username(),
-            "admin": True,
-        }
-    )
-    users.append(
-        {
-            "huid": uuid.uuid4(),
-            "user_kind": "botx",
-            "name": generate_username(),
-            "admin": False,
-        }
-    )
-
-    return ChatCreatedEvent(
-        **{
-            "group_chat_id": uuid.uuid4(),
-            "chat_type": "group_chat",
-            "name": "Test Chat",
-            "creator": creator_huid,
-            "members": users,
-        }
-    )
+    return factory
 
 
 @pytest.fixture
-def file_uuid() -> uuid.UUID:
-    return uuid.uuid4()
+async def execute_bot_command() -> Callable[[Bot, BotCommand], Awaitable[None]]:
+    async def executor(
+        bot: Bot,
+        command: BotCommand,
+    ) -> None:
+        async with lifespan_wrapper(bot):
+            bot.async_execute_bot_command(command)
 
-
-@pytest.fixture
-def file_for_builder() -> str:
-    base64_str = (base64.b64encode(b"test")).decode("utf-8")
-    data = "data:text/plain;base64," + base64_str
-    return data
-
-
-@pytest.fixture()
-def file() -> File:
-    file_io = io.BytesIO(b"test")
-    return File.from_file(file=file_io, filename="test.txt")
+    return executor
