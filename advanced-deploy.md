@@ -3,7 +3,7 @@
 * `BOT_CREDENTIALS`: Учётные данные бота. Состоят из блоков
   `cts_host@secret_key@bot_id`, разделённых запятыми (один бот может быть
   зарегистрирован на нескольких CTS). `cts_host` -- адрес админки, `secret_key` и
-  `bot_id` можно получить после регистрации бота, кликнув на его имя. Инструкция по
+  `bot_id` можно получить после регистрации бота, нажав на его имя. Инструкция по
   регистрации бота находится в [Руководстве
   администратора](https://express.ms/admin_guide.pdf) `->` Эксплуатация корпоративного
   сервера `->` Управление контактами `->` Чат-боты.
@@ -15,7 +15,7 @@
 * `SQL_DEBUG` [`false`]: Включает вывод запросов к БД PostgreSQL.
 
 
-## Подробная инструкция для продвинутого развертывания ToDo-бота
+## Продвинутая инструкция по развертыванию todo-bot
 
 **Примечание**: Чтобы легко добавлять новых ботов на сервер, хранилища находятся в
 отдельной docker-сети и используются несколькими ботами сразу (каждый обращается к своей
@@ -103,15 +103,16 @@ docker exec -it storages_postgres_1 psql --user postgres
 ```
 
 ```sql
-CREATE USER todo_bot_user PASSWORD "<GENERATE>";
+CREATE USER todo_bot_user PASSWORD '<GENERATE>';
 CREATE DATABASE todo_bot_db;
-GRANT ALL PRIVILEGES ON DATABASE todo_bot_db TO todo_bot_user;
+GRANT ALL PRIVILEGES ON DATABASE todo_bot_db 
+  TO todo_bot_user;
 ```
 
-2. Добавьте на сервер данный проект:
+2. Скачайте репозиторий на сервер:
 
 ```bash
-git clone https://github.com/ExpressApp/todo-bot.git /opt/express/bots/todo-bot
+git clone <THIS_REPOSITORY> /opt/express/bots/todo-bot
 cd /opt/express/bots/todo-bot
 ```
 
@@ -125,7 +126,8 @@ docker build -t todo-bot .
 [дополнительные параметры](https://www.uvicorn.org/#command-line-options). Например:
 
 ```bash
-docker build -t todo-bot --build-args UVICORN_CMD_ARGS="--ssl-ca-certs TEXT" .
+docker build -t todo-bot 
+  --build-args UVICORN_CMD_ARGS="--ssl-ca-certs TEXT" .
 ```
 
 4. В директории `/opt/express/bots/todo-bot` создайте файл
@@ -157,7 +159,7 @@ networks:
       name: express_bots_storages
 ```
    
-5. Создайте бота в админке eXpress. Хост CTS (в строке браузера, когда вы в админке) и
+5. Создайте бота в панели администратора eXpress. Хост CTS (в строке браузера, когда вы в админке) и
    "Secret key" пригодятся для заполнения переменной окружения `BOT_CREDENTIALS`. 
    Заполните `.env` необходимыми данными:
 

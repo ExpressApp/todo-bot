@@ -1,37 +1,48 @@
 """Application with configuration for events, routers and middleware."""
-from botx import UnknownBotError
+
+from functools import partial
+
+from botx import Bot
 from fastapi import FastAPI
 
-from app.api.error_handlers import unknown_bot
 from app.api.routers import router
-from app.bot.bot import bot
-from app.settings.config import get_app_settings
-from app.settings.events import shutdown, startup
+from app.bot.bot import get_bot
+from app.caching.redis_repo import RedisRepo
+from app.db.sqlalchemy import build_db_session_factory
+from app.resources import strings
+from app.settings import settings
 
-config = get_app_settings()
+
+async def startup(bot: Bot) -> None:
+    # -- Bot --
+    await bot.startup()
+
+    # -- Database --
+    bot.state.db_session_factory = await build_db_session_factory()
+
+    # -- Redis --
+    bot.state.redis_repo = await RedisRepo.init(
+        dsn=settings.REDIS_DSN, prefix=strings.BOT_PROJECT_NAME
+    )
+
+
+async def shutdown(bot: Bot) -> None:
+    # -- Bot --
+    await bot.shutdown()
+
+    # -- Redis --
+    await bot.state.redis_repo.close()
 
 
 def get_application() -> FastAPI:
     """Create configured server application instance."""
-    application = FastAPI(title="to-do-bot")
-    application.state = bot.state
+    bot = get_bot()
+
+    application = FastAPI(title=strings.BOT_PROJECT_NAME)
     application.state.bot = bot
 
-    application.add_event_handler(
-        "startup",
-        startup(
-            db_dsn=config.DATABASE_URL,
-            redis_dsn=config.REDIS_DSN,
-            redis_prefix="to-do-bot",
-            bot_app=bot,
-        ),
-    )
-
-    application.add_event_handler("shutdown", shutdown(bot_app=bot))
-
-    application.add_exception_handler(
-        UnknownBotError, unknown_bot.message_from_unknown_bot_handler
-    )
+    application.add_event_handler("startup", partial(startup, bot))
+    application.add_event_handler("shutdown", partial(shutdown, bot))
 
     application.include_router(router)
 

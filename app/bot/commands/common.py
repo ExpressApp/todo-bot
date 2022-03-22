@@ -2,61 +2,107 @@
 
 from os import environ
 
-from botx import Bot, Collector, Message
+from botx import (
+    Bot,
+    BotShuttingDownError,
+    BubbleMarkup,
+    ChatCreatedEvent,
+    HandlerCollector,
+    IncomingMessage,
+    StatusRecipient,
+)
 
-from app.bot.commands.user.create_task import TaskCreationEnum, fsm
+from app.bot.middlewares.db_session import db_session_middleware
+from app.db.record.repo import RecordRepo
 from app.resources import strings
-from app.schemas.task import TaskInCreation
-from app.services.answers.common import chat_created_message, default_message
-from app.services.answers.task_from_forward import get_decision_create_task_message
 
-collector = Collector()
+collector = HandlerCollector()
 
 
-@collector.default(include_in_status=False)
-async def default_handler(message: Message, bot: Bot) -> None:
-    """Run if command not found."""
-    if message.is_forward:
-        await bot.send(get_decision_create_task_message(message))
-        await fsm.change_state(
-            message,
-            TaskCreationEnum.DECISION_CREATE_TASK,
-            forward_data=message.command.body,
-            task=TaskInCreation(title=""),
-        )
-    else:
-        await bot.send(default_message(message))
+@collector.command("/_test-fail-shutting-down", visible=False)
+async def test_fail_shutting_down(message: IncomingMessage, bot: Bot) -> None:
+    """Testing fail while shutting down."""
+    raise BotShuttingDownError("test")
+
+
+@collector.command("/_test-fail", visible=False)
+async def test_fail(message: IncomingMessage, bot: Bot) -> None:
+    """Testing internal error."""
+    raise ValueError
+
+
+@collector.command("/_test-redis", visible=False)
+async def test_redis(message: IncomingMessage, bot: Bot) -> None:
+    """Testing redis."""
+    # This test just for coverage
+    # Better to assert bot answers instead of using direct DB/Redis access
+
+    redis_repo = bot.state.redis_repo
+
+    await redis_repo.set("test_key", "test_value")
+
+
+@collector.command("/_test-db", visible=False, middlewares=[db_session_middleware])
+async def test_db(message: IncomingMessage, bot: Bot) -> None:
+    """Testing db session."""
+    # This test just for coverage
+    # Better to assert bot answers instead of using direct DB/Redis access
+
+    # add text to history
+    # example of using database
+    record_repo = RecordRepo(message.state.db_session)
+
+    await record_repo.create(record_data="test 1")
+    await record_repo.update(record_id=1, record_data="test 1 (updated)")
+
+    await record_repo.create(record_data="test 2")
+    await record_repo.delete(record_id=2)
+
+    await record_repo.create(record_data="test not unique data")
+    await record_repo.create(record_data="test not unique data")
+
+
+@collector.default_message_handler
+async def default_handler(
+    message: IncomingMessage,
+    bot: Bot,
+) -> None:
+    """Run if command handler not found."""
+
+    await bot.answer_message("Hello!")
 
 
 @collector.chat_created
-async def chat_created(message: Message, bot: Bot) -> None:
+async def chat_created_handler(event: ChatCreatedEvent, bot: Bot) -> None:
     """Send a welcome message and the bot functionality in new created chat."""
-    await bot.send(chat_created_message(message))
+
+    answer_body = strings.CHAT_CREATED_TEMPLATE.format(
+        bot_project_name=strings.BOT_DISPLAY_NAME
+    )
+    bubbles = BubbleMarkup()
+    bubbles.add_button(command="/help", label=strings.HELP_LABEL)
+
+    await bot.answer_message(answer_body, bubbles=bubbles)
 
 
-@collector.handler(
-    command="/help", name="help", description=strings.HELP_COMMAND_DESCRIPTION
-)
-async def show_help(message: Message, bot: Bot) -> None:
-    """Справка по командам."""
-    status = await message.bot.status()
+@collector.command("/help", description="Get available commands")
+async def help_handler(message: IncomingMessage, bot: Bot) -> None:
+    """Show commands list."""
 
-    # For each public command:
-    # * collect full description or
-    # * collect short description like in status or
-    # * skip command without any description
-    commands = []
-    for command in status.result.commands:
-        command_handler = message.bot.handler_for(command.name)
-        description = command_handler.full_description or command_handler.description
-        if description:
-            commands.append((command.body, description))
+    status_recipient = StatusRecipient.from_incoming_message(message)
 
-    text = strings.HELP_COMMAND_MESSAGE_TEMPLATE.format(commands=commands)
-    await bot.answer_message(text, message)
+    status = await bot.get_status(status_recipient)
+    command_map = dict(sorted(status.items()))
+
+    answer_body = "\n".join(
+        f"`{command}` -- {description}" for command, description in command_map.items()
+    )
+
+    await bot.answer_message(answer_body)
 
 
-@collector.hidden(command="/_debug:git-commit-sha")
-async def git_commit_sha(message: Message, bot: Bot) -> None:
+@collector.command("/_debug:git-commit-sha", visible=False)
+async def git_commit_sha(message: IncomingMessage, bot: Bot) -> None:
     """Show git commit SHA."""
-    await bot.answer_message(environ.get("GIT_COMMIT_SHA", "<undefined>"), message)
+
+    await bot.answer_message(environ.get("GIT_COMMIT_SHA", "<undefined>"))

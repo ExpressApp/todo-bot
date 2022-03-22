@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   todo-bot:
-    build: .
+    build: ..
     container_name: todo-bot
     environment:
       - BOT_CREDENTIALS=cts_host@secret_key@bot_id
