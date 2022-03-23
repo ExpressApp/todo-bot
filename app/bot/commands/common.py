@@ -80,7 +80,7 @@ async def chat_created_handler(event: ChatCreatedEvent, bot: Bot) -> None:
         bot_project_name=strings.BOT_DISPLAY_NAME
     )
     bubbles = BubbleMarkup()
-    bubbles.add_button(command="/help", label=strings.HELP_LABEL)
+    bubbles.add_button(command="/создать", label=strings.CREATE_TASK_LABEL)
 
     await bot.answer_message(answer_body, bubbles=bubbles)
 

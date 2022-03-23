@@ -40,6 +40,7 @@ BOT_PROJECT_NAME = "todo-bot"
 BOT_DISPLAY_NAME = "ToDo bot"
 
 CHAT_CREATED_TEMPLATE = lookup.get_template("chat_created.txt.mako")
+CREATE_TASK_LABEL = "Создать задачу"
 HELP_COMMAND_MESSAGE_TEMPLATE = lookup.get_template("help.txt.mako")
 HELP_COMMAND_DESCRIPTION = "Показать список команд"
 HELP_LABEL = "/help"
