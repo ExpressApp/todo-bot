@@ -1,7 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
 from app.db.crud import CRUD
-from app.schemas.tasks import Attachment, Task
+from app.schemas.tasks import Task
 from app.db.sqlalchemy import AsyncSession
 
 
