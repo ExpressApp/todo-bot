@@ -12,6 +12,7 @@ python = ">=3.8,<3.11"
 
 botx = "~0.30.0"
 botx-fsm = { git = "https://github.com/ExpressApp/pybotx-fsm" }
+botx-smart-logger = { git = "https://gitlab.ccsteam.ru/rnd/pybotx-smart-logger", branch = "nikita.demidovich" }
 
 fastapi = "~0.74.1"
 uvicorn = { version = "~0.17.5", extras = ["standart"] }
