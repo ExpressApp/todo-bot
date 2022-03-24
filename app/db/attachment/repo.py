@@ -35,4 +35,8 @@ class AttachmentRepo:
         pass
 
     def _to_domain(self, attachment_in_db: AttachmentModel) -> Attachment:
-        pass
+        return Attachment(
+            id=attachment_in_db.id,
+            file_storage_id=attachment_in_db.file_storage_uuid,
+            filename=attachment_in_db.filename
+        )
