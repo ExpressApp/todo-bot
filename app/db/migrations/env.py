@@ -14,6 +14,7 @@ from app.db.sqlalchemy import Base, make_url_sync  # isort:skip
 
 # Import models to make them visible by alembic
 import app.db.record.models  # isort:skip
+import app.db.attachment.models
 
 postgres_dsn = make_url_sync(settings.POSTGRES_DSN)
 context_config = context.config
