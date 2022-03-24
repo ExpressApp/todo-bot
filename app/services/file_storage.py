@@ -1,12 +1,17 @@
 """Storage for saving and reading files."""
-import io
+
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import AsyncIterator, Protocol
 from uuid import UUID, uuid4
 
-from aiofiles import os as async_os
-from botx import File
+import aiofiles
+from aiofiles.tempfile.temptypes import AsyncSpooledTemporaryFile
 
-from app.settings.config import get_app_settings
+
+class AsyncBufferedReader(Protocol):
+    async def read(self, size: int = -1) -> bytes:
+        ...
 
 
 class FileStorage:
@@ -16,23 +21,24 @@ class FileStorage:
         `storage_path` should be path to existing directory.
         """
 
-        if storage_path.exists():
-            self._storage_path = storage_path
-        else:
-            raise FileNotFoundError
+        assert storage_path.exists(), "`storage_path` dir should exists"
 
-    async def get_file(self, file_uuid: UUID, attachment_name: str) -> File:
+        self._storage_path = storage_path
+
+    @asynccontextmanager
+    async def file(
+        self, file_uuid: UUID
+    ) -> AsyncIterator[AsyncBufferedReader]:
         """Get file object in storage by its UUID."""
 
         file_path = self._get_path_to_file(file_uuid)
-        if file_path.exists():
-            with open(file_path, "rb") as fo:
-                file_bytes = fo.read()
-            file_io = io.BytesIO(file_bytes)
-            return File.from_file(file=file_io, filename=attachment_name)
-        raise FileNotFoundError
 
-    async def save(self, attachment: File) -> UUID:
+        assert file_path.exists(), f"File with uuid {file_uuid} not exists"
+
+        async with aiofiles.open(file_path, "rb") as fo:
+            yield fo
+
+    async def save(self, file: AsyncSpooledTemporaryFile) -> UUID:
         """Save file to storage using its file object.
 
         Returns file UUID.
@@ -41,24 +47,18 @@ class FileStorage:
         file_uuid = uuid4()
         file_path = self._get_path_to_file(file_uuid)
 
-        with open(file_path, "wb") as target_fo:
-            target_fo.write(attachment.file.read())
+        async with aiofiles.open(file_path, "wb") as target_fo:
+            async for chunk in file:
+                await target_fo.write(chunk)
 
         return file_uuid
 
     async def remove(self, file_uuid: UUID) -> None:
-        """Remove file from storage file uuid."""
-
         file_path = self._get_path_to_file(file_uuid)
 
-        if file_path.exists():
-            await async_os.remove(file_path)
-        else:
-            raise FileNotFoundError
+        assert file_path.exists(), f"File with uuid {file_uuid} not exists"
+
+        await aiofiles.os.remove(file_path)
 
     def _get_path_to_file(self, file_uuid: UUID) -> Path:
         return self._storage_path.joinpath(str(file_uuid))
-
-
-config = get_app_settings()
-file_storage = FileStorage(config.FILE_STORAGE_PATH)
