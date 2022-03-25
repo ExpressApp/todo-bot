@@ -11,7 +11,7 @@ from botx import (
 )
 from botx_fsm import FSMCollector
 
-from app.bot.constants import FILE_STORAGE_PATH
+from app.bot.constants import FILE_STORAGE_PATH, SKIP_COMMAND
 from app.bot.middlewares.db_session import db_session_middleware
 from app.db.attachment.repo import AttachmentRepo
 from app.schemas.enums import StrEnum
@@ -67,7 +67,7 @@ def get_task_approve_message(
 
 def skip_button() -> BubbleMarkup:
     bubble = BubbleMarkup()
-    bubble.add_button(command="SKIP", label="Пропустить")
+    bubble.add_button(command=SKIP_COMMAND, label="Пропустить")
     return bubble
 
 
@@ -101,7 +101,7 @@ async def waiting_task_contact_handler(message: IncomingMessage, bot: Bot) -> No
     title = message.state.fsm_storage.title
     text = message.state.fsm_storage.text
 
-    if message.body == "SKIP":
+    if message.body == SKIP_COMMAND:
         contact = None
     else:
         contact = message.mentions.contacts[0]
@@ -125,7 +125,7 @@ async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) ->
     text = message.state.fsm_storage.text
     contact = message.state.fsm_storage.contact
 
-    if message.body == "SKIP":
+    if message.body == SKIP_COMMAND:
         file_storage_id = None
         filename = None
     else:
