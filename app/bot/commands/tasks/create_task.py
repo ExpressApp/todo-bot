@@ -6,14 +6,16 @@ from botx import (
     BubbleMarkup, 
     HandlerCollector, 
     IncomingMessage, 
+    KeyboardMarkup,
     Mention, 
     OutgoingMessage
 )
 from botx_fsm import FSMCollector
 
-from app.bot.constants import FILE_STORAGE_PATH, SKIP_COMMAND
+from app.bot.constants import FILE_STORAGE_PATH
 from app.bot.middlewares.db_session import db_session_middleware
 from app.db.attachment.repo import AttachmentRepo
+from app.resources import strings
 from app.schemas.enums import StrEnum
 from app.services.file_storage import FileStorage
 
@@ -35,6 +37,20 @@ collector = HandlerCollector()
 file_storage = FileStorage(Path(FILE_STORAGE_PATH))
 fsm = FSMCollector(CreateTaskStates)
 
+
+def get_cancel_message(message: IncomingMessage) -> OutgoingMessage:
+    text = "**Создание задачи отменено.**\n\nДля дальнейшей работы нажмите любую из кнопок ниже:"
+
+    bubbles = BubbleMarkup()
+    bubbles.add_button(command="/создать", label=strings.CREATE_TASK_LABEL)
+    bubbles.add_button(command="", label=strings.LIST_TASKS_LABEL)
+
+    return OutgoingMessage(
+        bot_id=message.bot.id,
+        chat_id=message.chat.id,
+        body=text,
+        bubbles=bubbles
+    )
 
 def get_task_approve_message(
     message: IncomingMessage,
@@ -65,9 +81,14 @@ def get_task_approve_message(
     )
 
 
+# Buttons
+def cancel_keyboard_button() -> KeyboardMarkup:
+    keyboard = KeyboardMarkup()
+    keyboard.add_button(command=strings.CANCEL_COMMAND, label="Отменить")
+
 def skip_button() -> BubbleMarkup:
     bubble = BubbleMarkup()
-    bubble.add_button(command=SKIP_COMMAND, label="Пропустить")
+    bubble.add_button(command=strings.SKIP_COMMAND, label="Пропустить")
     return bubble
 
 
@@ -101,7 +122,7 @@ async def waiting_task_contact_handler(message: IncomingMessage, bot: Bot) -> No
     title = message.state.fsm_storage.title
     text = message.state.fsm_storage.text
 
-    if message.body == SKIP_COMMAND:
+    if message.body == strings.SKIP_COMMAND:
         contact = None
     else:
         contact = message.mentions.contacts[0]
@@ -125,7 +146,7 @@ async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) ->
     text = message.state.fsm_storage.text
     contact = message.state.fsm_storage.contact
 
-    if message.body == SKIP_COMMAND:
+    if message.body == strings.SKIP_COMMAND:
         file_storage_id = None
         filename = None
     else:
