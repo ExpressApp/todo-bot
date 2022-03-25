@@ -12,4 +12,4 @@ class Task:
     title: str
     description: str
     mentioned_colleague: Optional[UUID]
-    attachment: Optional[Attachment]
+    attachment_id: Optional[int]
