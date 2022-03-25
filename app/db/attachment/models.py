@@ -10,7 +10,7 @@ from app.db.sqlalchemy import Base
 class AttachmentModel(Base):
     __tablename__ = "attachments"
 
-    id: int = Column(Integer, ForeignKey('tasks.attachment_id'), primary_key=True, autoincrement=True)
+    id: int = Column(Integer, ForeignKey('tasks.attachment_id', ondelete="CASCADE"), primary_key=True, autoincrement=True)
     file_storage_uuid: UUID = Column(postgresql.UUID(as_uuid=True))
     filename: str = Column(String)
 

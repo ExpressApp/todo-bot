@@ -16,7 +16,7 @@ class TaskModel(Base):
     title: str = Column(String)
     description: str = Column(String)
     mentioned_colleague: Optional[UUID] = Column(postgresql.UUID(as_uuid=True), nullable=True)
-    attachment_id: Optional[int] = Column(Integer, nullable=True)
+    attachment_id: Optional[int] = Column(Integer, nullable=True, unique=True)
 
     attachment = relationship(
         "app.db.attachment.models.AttachmentModel",
