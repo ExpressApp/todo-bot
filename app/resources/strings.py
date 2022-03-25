@@ -48,6 +48,9 @@ HELP_LABEL = "/help"
 LIST_TASKS_LABEL = "Показать список задач"
 SKIP_COMMAND = "SKIP"
 
+CANCEL_TITLE = "Создание задачи отменено."
+SUCCESS_TITLE = "Задача успешно создана!"
+
 # Warnings
 OTHER_CTS_WARNING = "\n".join(
     [

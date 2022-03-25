@@ -1,13 +1,15 @@
 from typing import List, Optional
 from uuid import UUID
+
 from app.db.crud import CRUD
-from app.schemas.tasks import Task
 from app.db.sqlalchemy import AsyncSession
+from app.schemas.tasks import Task
+from app.db.task.models import TaskModel
 
 
 class TaskRepo:
     def __init__(self, session: AsyncSession):
-        pass
+        self._crud = CRUD(session=session, cls_model=TaskModel)
 
     async def create_task(
         self, 
@@ -17,7 +19,18 @@ class TaskRepo:
         mentioned_colleague_id: Optional[UUID],
         attachment_id: Optional[int]
     ) -> Task:
-        pass
+        model_data = {
+            "user_huid": user_huid,
+            "title": title,
+            "description": description,
+            "mentioned_colleague_id": mentioned_colleague_id,
+            "attachment_id": attachment_id
+        }
+        row = await self._crud.create(model_data=model_data)
+
+        task_in_db = await self._crud.get(pkey_val=row.id)
+
+        return self._to_domain(task_in_db)
 
     async def get_users_task(self, user_huid: UUID) -> List[Task]:
         pass
@@ -30,3 +43,13 @@ class TaskRepo:
 
     async def change_task_description(self, task_id: int) -> Task:
         pass
+
+    def _to_domain(self, task_in_db: TaskModel) -> Task:
+        return Task(
+            id=task_in_db.id,
+            user_huid=task_in_db.user_huid,
+            title=task_in_db.title,
+            description=task_in_db.description,
+            mentioned_colleague_id=task_in_db.mentioned_colleague_id,
+            attachment_id=task_in_db.attachment_id
+        )

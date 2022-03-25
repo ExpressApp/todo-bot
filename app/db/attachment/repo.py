@@ -36,6 +36,6 @@ class AttachmentRepo:
     def _to_domain(self, attachment_in_db: AttachmentModel) -> Attachment:
         return Attachment(
             id=attachment_in_db.id,
-            file_storage_id=attachment_in_db.file_storage_uuid,
+            file_storage_id=attachment_in_db.file_storage_id,
             filename=attachment_in_db.filename
         )

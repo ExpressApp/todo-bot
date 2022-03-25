@@ -11,5 +11,5 @@ class Task:
     user_huid: UUID
     title: str
     description: str
-    mentioned_colleague: Optional[UUID]
+    mentioned_colleague_id: Optional[UUID]
     attachment_id: Optional[int]
