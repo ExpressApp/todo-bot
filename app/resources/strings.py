@@ -39,7 +39,7 @@ lookup = TemplateFormatterLookup(
 BOT_PROJECT_NAME = "todo-bot"
 BOT_DISPLAY_NAME = "ToDo bot"
 
-СANCEL_COMMAND = "CANCEL"
+CANCEL_COMMAND = "CANCEL"
 CHAT_CREATED_TEMPLATE = lookup.get_template("chat_created.txt.mako")
 CREATE_TASK_LABEL = "Создать задачу"
 HELP_COMMAND_MESSAGE_TEMPLATE = lookup.get_template("help.txt.mako")

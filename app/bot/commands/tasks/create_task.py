@@ -1,23 +1,20 @@
 from enum import Enum, auto
 from pathlib import Path
 
-from botx import (
-    Bot, 
-    BubbleMarkup, 
-    HandlerCollector, 
-    IncomingMessage, 
-    KeyboardMarkup,
-    Mention, 
-    OutgoingMessage
-)
+from botx import Bot, HandlerCollector, IncomingMessage
 from botx_fsm import FSMCollector
 
 from app.bot import constants
+from app.bot.middlewares.cancel_creation import cancel_creation_middleware
 from app.bot.middlewares.db_session import db_session_middleware
 from app.db.attachment.repo import AttachmentRepo
 from app.db.task.repo import TaskRepo
 from app.resources import strings
 from app.schemas.enums import StrEnum
+from app.services.answers.approve import get_task_approve_message
+from app.services.answers.creation_status import get_status_message
+from app.services.buttons.cancel import cancel_keyboard_button
+from app.services.buttons.skip import skip_button
 from app.services.file_storage import FileStorage
 
 
@@ -39,67 +36,10 @@ file_storage = FileStorage(Path(constants.FILE_STORAGE_PATH))
 fsm = FSMCollector(CreateTaskStates)
 
 
-# Messages
-def get_status_message(message: IncomingMessage, title: str) -> OutgoingMessage:
-    text = (
-        f"**{title}**\n\n"
-        "Для дальнейшей работы нажмите любую из кнопок ниже:"
-    )
-
-    bubbles = BubbleMarkup()
-    bubbles.add_button(command="/создать", label=strings.CREATE_TASK_LABEL)
-    bubbles.add_button(command="", label=strings.LIST_TASKS_LABEL)
-
-    return OutgoingMessage(
-        bot_id=message.bot.id,
-        chat_id=message.chat.id,
-        body=text,
-        bubbles=bubbles
-    )
-
-def get_task_approve_message(
-    message: IncomingMessage,
-    title: str,
-    text: str,
-    contact: Mention,
-    filename: str
-) -> OutgoingMessage:
-    contact_in_msg = contact if contact else "Без контакта"
-    filename_in_msg = filename if filename else "Без вложения"
-    text = (
-        f"**Название задачи**: {title}\n"
-        f"**Описание задачи**: {text}\n"
-        f"**Контакт**: {contact_in_msg}\n"
-        f"**Вложение**: {filename_in_msg}\n\n"
-        "Все верно?\n\n"
-    ).format(title=title, text=text, contact_in_msg=contact_in_msg, filename_in_msg=filename_in_msg)
-
-    bubbles = BubbleMarkup()
-    bubbles.add_button(command=TaskApproveCommands.YES, label="Да")
-    bubbles.add_button(command=TaskApproveCommands.NO, label="Нет")
-
-    return OutgoingMessage(
-        bot_id=message.bot.id,
-        chat_id=message.chat.id,
-        body=text,
-        bubbles=bubbles,
-        keyboard=cancel_keyboard_button()
-    )
-
-
-# Buttons and keyboards
-def cancel_keyboard_button() -> KeyboardMarkup:
-    keyboard = KeyboardMarkup()
-    keyboard.add_button(command=strings.СANCEL_COMMAND, label="Отменить")
-    return keyboard
-
-def skip_button() -> BubbleMarkup:
-    bubble = BubbleMarkup()
-    bubble.add_button(command=strings.SKIP_COMMAND, label="Пропустить")
-    return bubble
-
-
-@fsm.on(CreateTaskStates.WAITING_TASK_TITLE)
+@fsm.on(
+    CreateTaskStates.WAITING_TASK_TITLE, 
+    middlewares=[cancel_creation_middleware]
+)
 async def waiting_task_title_handler(message: IncomingMessage, bot: Bot) -> None:
     await message.state.fsm.change_state(
         CreateTaskStates.WAITING_TASK_TEXT,
@@ -111,7 +51,10 @@ async def waiting_task_title_handler(message: IncomingMessage, bot: Bot) -> None
     )
 
 
-@fsm.on(CreateTaskStates.WAITING_TASK_TEXT)
+@fsm.on(
+    CreateTaskStates.WAITING_TASK_TEXT,
+    middlewares=[cancel_creation_middleware]
+)
 async def waiting_task_text_handler(message: IncomingMessage, bot: Bot) -> None:
     title = message.state.fsm_storage.title
     text = message.body
@@ -128,7 +71,10 @@ async def waiting_task_text_handler(message: IncomingMessage, bot: Bot) -> None:
     )
 
 
-@fsm.on(CreateTaskStates.WAITING_TASK_CONTACT)
+@fsm.on(
+    CreateTaskStates.WAITING_TASK_CONTACT,
+    middlewares=[cancel_creation_middleware]
+)
 async def waiting_task_contact_handler(message: IncomingMessage, bot: Bot) -> None:
     title = message.state.fsm_storage.title
     text = message.state.fsm_storage.text
@@ -152,8 +98,16 @@ async def waiting_task_contact_handler(message: IncomingMessage, bot: Bot) -> No
     )
 
 
-@fsm.on(CreateTaskStates.WAITING_TASK_ATTACHMENT)
+@fsm.on(
+    CreateTaskStates.WAITING_TASK_ATTACHMENT,
+    middlewares=[cancel_creation_middleware]
+)
 async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) -> None:
+    if message.body == strings.СANCEL_COMMAND:
+        await message.state.fsm.drop_state()
+        await bot.send(message=get_status_message(message, strings.CANCEL_TITLE))
+        return
+
     title = message.state.fsm_storage.title
     text = message.state.fsm_storage.text
     contact = message.state.fsm_storage.contact
@@ -176,12 +130,20 @@ async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) ->
     )
 
     await bot.send(
-        message=get_task_approve_message(message, title, text, contact, filename)
+        message=get_task_approve_message(message, title, text, contact, filename, TaskApproveCommands)
     )
 
 
-@fsm.on(CreateTaskStates.WAITING_TASK_APPROVE, middlewares=[db_session_middleware])
+@fsm.on(
+    CreateTaskStates.WAITING_TASK_APPROVE, 
+    middlewares=[db_session_middleware, cancel_creation_middleware]
+)
 async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> None:
+    if message.body == strings.СANCEL_COMMAND:
+        await message.state.fsm.drop_state()
+        await bot.send(message=get_status_message(message, strings.CANCEL_TITLE))
+        return
+
     title = message.state.fsm_storage.title
     text = message.state.fsm_storage.text
     contact = message.state.fsm_storage.contact
