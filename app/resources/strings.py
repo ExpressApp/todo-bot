@@ -39,14 +39,17 @@ lookup = TemplateFormatterLookup(
 BOT_PROJECT_NAME = "todo-bot"
 BOT_DISPLAY_NAME = "ToDo bot"
 
+BEFORE_APPROVE = "Вам необходимо проверить и подтвердить правильность ввода."
 CANCEL_COMMAND = "CANCEL"
 CHAT_CREATED_TEMPLATE = lookup.get_template("chat_created.txt.mako")
 CREATE_TASK_LABEL = "Создать задачу"
 HELP_COMMAND_MESSAGE_TEMPLATE = lookup.get_template("help.txt.mako")
 HELP_COMMAND_DESCRIPTION = "Показать список команд"
 HELP_LABEL = "/help"
+INCORRECT_CONTACT = "Вы некорректно отметили коллегу. Пожалуйста, укажите **только одного** пользователя **через @@**"
 LIST_TASKS_LABEL = "Показать список задач"
 SKIP_COMMAND = "SKIP"
+WITHOUT_FILE = "Вы не прикрепили файл к сообщению. Прикрепите файл или пропустите этот шаг."
 
 CANCEL_TITLE = "Создание задачи отменено."
 SUCCESS_TITLE = "Задача успешно создана!"
@@ -71,5 +74,13 @@ SOMETHING_GOES_WRONG = "\n".join(
     [
         "При обработке сообщения или нажатия на кнопку произошла непредвиденная ошибка.",
         "Пожалуйста, сообщите об этом вашему администратору бота.",
+    ]
+)
+
+DEFAULT_MESSAGE = "\n\n".join(
+    [
+        "К сожалению, мне не удалось найти информацию.",
+        "С моей помощью вы сможете работать со списками задач, чтобы контролировать дела, которые нужно сделать за день.",
+        "Для дальнейшей работы нажмите на одну из кнопок ниже:"
     ]
 )

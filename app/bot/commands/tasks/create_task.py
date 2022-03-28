@@ -82,7 +82,14 @@ async def waiting_task_contact_handler(message: IncomingMessage, bot: Bot) -> No
     if message.body == strings.SKIP_COMMAND:
         contact = None
     else:
-        contact = message.mentions.contacts[0]
+        try:
+            contact = message.mentions.contacts[0]
+        except:
+            await bot.answer_message(
+                body=strings.INCORRECT_CONTACT, 
+                bubbles=skip_button(),
+                keyboard=cancel_keyboard_button())
+            return
 
     await message.state.fsm.change_state(
         CreateTaskStates.WAITING_TASK_ATTACHMENT,
@@ -103,11 +110,6 @@ async def waiting_task_contact_handler(message: IncomingMessage, bot: Bot) -> No
     middlewares=[cancel_creation_middleware]
 )
 async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) -> None:
-    if message.body == strings.СANCEL_COMMAND:
-        await message.state.fsm.drop_state()
-        await bot.send(message=get_status_message(message, strings.CANCEL_TITLE))
-        return
-
     title = message.state.fsm_storage.title
     text = message.state.fsm_storage.text
     contact = message.state.fsm_storage.contact
@@ -116,9 +118,17 @@ async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) ->
         file_storage_id = None
         filename = None
     else:
-        async with message.file.open() as file:
-            file_storage_id = await file_storage.save(file)
-            filename = message.file.filename
+        try:
+            async with message.file.open() as file:
+                file_storage_id = await file_storage.save(file)
+                filename = message.file.filename
+        except:
+            await bot.answer_message(
+                body=strings.WITHOUT_FILE,
+                bubbles=skip_button(),
+                keyboard=cancel_keyboard_button()
+            )
+            return
 
     await message.state.fsm.change_state(
         CreateTaskStates.WAITING_TASK_APPROVE,
@@ -139,11 +149,6 @@ async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) ->
     middlewares=[db_session_middleware, cancel_creation_middleware]
 )
 async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> None:
-    if message.body == strings.СANCEL_COMMAND:
-        await message.state.fsm.drop_state()
-        await bot.send(message=get_status_message(message, strings.CANCEL_TITLE))
-        return
-
     title = message.state.fsm_storage.title
     text = message.state.fsm_storage.text
     contact = message.state.fsm_storage.contact
@@ -167,6 +172,7 @@ async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> No
         await db_session.commit()
 
         await message.state.fsm.drop_state()
+        await bot.answer_message(strings.BEFORE_APPROVE)
         await bot.send(message=get_status_message(message, strings.SUCCESS_TITLE))
     elif message.body == TaskApproveCommands.NO:
         await message.state.fsm.change_state(CreateTaskStates.WAITING_TASK_TITLE)
@@ -176,7 +182,7 @@ async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> No
         )
     else:
         await bot.send(
-            message=get_task_approve_message(message, title, text, contact, filename)
+            message=get_task_approve_message(message, title, text, contact, filename, TaskApproveCommands)
         )
 
 

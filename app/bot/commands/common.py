@@ -69,7 +69,14 @@ async def default_handler(
 ) -> None:
     """Run if command handler not found."""
 
-    await bot.answer_message("Hello!")
+    bubbles = BubbleMarkup()
+    bubbles.add_button(command="/создать", label=strings.CREATE_TASK_LABEL)
+    bubbles.add_button(command="", label=strings.LIST_TASKS_LABEL)
+
+    await bot.answer_message(
+        body=strings.DEFAULT_MESSAGE,
+        bubbles=bubbles
+    )
 
 
 @collector.chat_created
