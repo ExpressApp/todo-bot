@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from app.db.attachment.models import AttachmentModel
 from app.db.crud import CRUD
 from app.db.sqlalchemy import AsyncSession
@@ -7,24 +5,21 @@ from app.schemas.attachments import Attachment, AttachmentInCreation
 
 
 class AttachmentRepo:
-    
     def __init__(self, session: AsyncSession):
         self._crud = CRUD(session=session, cls_model=AttachmentModel)
 
     async def create_attachment(
-        self, 
-        attachment_in_creation: AttachmentInCreation
+        self, attachment_in_creation: AttachmentInCreation
     ) -> Attachment:
         file_storage_id = attachment_in_creation.file_storage_id
         filename = attachment_in_creation.filename
-        
+
         row = await self._crud.create(
             model_data={"file_storage_id": file_storage_id, "filename": filename},
         )
         attachment_in_db = await self._crud.get(pkey_val=row.id)
 
         return self._to_domain(attachment_in_db)
-
 
     async def get_attachment_name(self, attachment_id: int) -> str:
         pass
@@ -36,5 +31,5 @@ class AttachmentRepo:
         return Attachment(
             id=attachment_in_db.id,
             file_storage_id=attachment_in_db.file_storage_id,
-            filename=attachment_in_db.filename
+            filename=attachment_in_db.filename,
         )

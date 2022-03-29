@@ -7,4 +7,3 @@ def get_skip_button() -> BubbleMarkup:
     bubble = BubbleMarkup()
     bubble.add_button(command=SKIP_COMMAND, label="Пропустить")
     return bubble
-    

@@ -1,26 +1,23 @@
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 
 from app.db.crud import CRUD
 from app.db.sqlalchemy import AsyncSession
-from app.schemas.tasks import Task, TaskInCreation
 from app.db.task.models import TaskModel
+from app.schemas.tasks import Task, TaskInCreation
 
 
 class TaskRepo:
     def __init__(self, session: AsyncSession):
         self._crud = CRUD(session=session, cls_model=TaskModel)
 
-    async def create_task(
-        self, 
-        task_in_creation: TaskInCreation
-    ) -> Task:
+    async def create_task(self, task_in_creation: TaskInCreation) -> Task:
         model_data = {
             "user_huid": task_in_creation.user_huid,
             "title": task_in_creation.title,
             "description": task_in_creation.description,
             "mentioned_colleague_id": task_in_creation.mentioned_colleague_id,
-            "attachment_id": task_in_creation.attachment_id
+            "attachment_id": task_in_creation.attachment_id,
         }
         row = await self._crud.create(model_data=model_data)
 
@@ -47,5 +44,5 @@ class TaskRepo:
             title=task_in_db.title,
             description=task_in_db.description,
             mentioned_colleague_id=task_in_db.mentioned_colleague_id,
-            attachment_id=task_in_db.attachment_id
+            attachment_id=task_in_db.attachment_id,
         )

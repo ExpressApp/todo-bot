@@ -7,4 +7,3 @@ def get_cancel_keyboard_button() -> KeyboardMarkup:
     keyboard = KeyboardMarkup()
     keyboard.add_button(command=CANCEL_COMMAND, label="Отменить")
     return keyboard
-    

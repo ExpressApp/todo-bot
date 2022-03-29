@@ -20,4 +20,3 @@ class TaskInCreation:
     description: Optional[str] = None
     mentioned_colleague_id: Optional[UUID] = None
     attachment_id: Optional[int] = None
-    

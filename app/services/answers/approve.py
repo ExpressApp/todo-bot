@@ -1,8 +1,8 @@
 from botx import BubbleMarkup, IncomingMessage, Mention, OutgoingMessage
+
 from app.schemas.attachments import AttachmentInCreation
 from app.schemas.enums import StrEnum
 from app.schemas.tasks import TaskInCreation
-
 from app.services.buttons.cancel import get_cancel_keyboard_button
 
 
@@ -10,7 +10,7 @@ def get_task_approve_message(
     message: IncomingMessage,
     task: TaskInCreation,
     attachment: AttachmentInCreation,
-    commands: StrEnum
+    commands: StrEnum,
 ) -> OutgoingMessage:
     contact = "Без контакта"
     if task.mentioned_colleague_id:
@@ -20,12 +20,14 @@ def get_task_approve_message(
     if attachment.filename:
         file = attachment.filename
 
-    text = '\n'.join([
-        f"**Название задачи**: {task.title}",
-        f"**Описание задачи**: {task.description}",
-        f"**Контакт**: {contact}\n",
-        f"**Вложение**: {file}\n\n"
-    ])
+    text = "\n".join(
+        [
+            f"**Название задачи**: {task.title}",
+            f"**Описание задачи**: {task.description}",
+            f"**Контакт**: {contact}",
+            f"**Вложение**: {file}\n\n",
+        ]
+    )
 
     bubbles = BubbleMarkup()
     bubbles.add_button(command=commands.YES, label="Да")
@@ -36,5 +38,5 @@ def get_task_approve_message(
         chat_id=message.chat.id,
         body=text,
         bubbles=bubbles,
-        keyboard=get_cancel_keyboard_button()
+        keyboard=get_cancel_keyboard_button(),
     )

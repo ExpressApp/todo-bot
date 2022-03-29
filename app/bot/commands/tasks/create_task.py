@@ -38,15 +38,11 @@ file_storage = FileStorage(Path(constants.FILE_STORAGE_PATH))
 fsm = FSMCollector(CreateTaskStates)
 
 
-@fsm.on(
-    CreateTaskStates.WAITING_TASK_TITLE, 
-    middlewares=[cancel_creation_middleware]
-)
+@fsm.on(CreateTaskStates.WAITING_TASK_TITLE, middlewares=[cancel_creation_middleware])
 async def waiting_task_title_handler(message: IncomingMessage, bot: Bot) -> None:
     if message.file:
         await bot.answer_message(
-            body=strings.FILE_NOT_TITLE,
-            keyboard=get_cancel_keyboard_button()
+            body=strings.FILE_NOT_TITLE, keyboard=get_cancel_keyboard_button()
         )
         return
 
@@ -58,71 +54,60 @@ async def waiting_task_title_handler(message: IncomingMessage, bot: Bot) -> None
         task=task,
     )
     await bot.answer_message(
-        body="Введите текст задачи:",
-        keyboard=get_cancel_keyboard_button()
+        body="Введите текст задачи:", keyboard=get_cancel_keyboard_button()
     )
 
 
-@fsm.on(
-    CreateTaskStates.WAITING_TASK_TEXT,
-    middlewares=[cancel_creation_middleware]
-)
+@fsm.on(CreateTaskStates.WAITING_TASK_TEXT, middlewares=[cancel_creation_middleware])
 async def waiting_task_text_handler(message: IncomingMessage, bot: Bot) -> None:
     if message.file:
         await bot.answer_message(
-            body=strings.FILE_NOT_DESCRIPTION,
-            keyboard=get_cancel_keyboard_button()
+            body=strings.FILE_NOT_DESCRIPTION, keyboard=get_cancel_keyboard_button()
         )
         return
-    
+
     task = message.state.fsm_storage.task
     task.description = message.body
 
     await message.state.fsm.change_state(
-        CreateTaskStates.WAITING_TASK_CONTACT,
-        task=task
+        CreateTaskStates.WAITING_TASK_CONTACT, task=task
     )
 
     await bot.answer_message(
         body="При необходимости отметьте **одного коллегу**, связанного с задачей, через `@@`:",
         bubbles=get_skip_button(),
-        keyboard=get_cancel_keyboard_button()
+        keyboard=get_cancel_keyboard_button(),
     )
 
 
-@fsm.on(
-    CreateTaskStates.WAITING_TASK_CONTACT,
-    middlewares=[cancel_creation_middleware]
-)
+@fsm.on(CreateTaskStates.WAITING_TASK_CONTACT, middlewares=[cancel_creation_middleware])
 async def waiting_task_contact_handler(message: IncomingMessage, bot: Bot) -> None:
     task = message.state.fsm_storage.task
 
     if message.body != strings.SKIP_COMMAND:
         if len(message.mentions.contacts) != 1:
             await bot.answer_message(
-                body=strings.INCORRECT_CONTACT, 
+                body=strings.INCORRECT_CONTACT,
                 bubbles=get_skip_button(),
-                keyboard=get_cancel_keyboard_button()
+                keyboard=get_cancel_keyboard_button(),
             )
             return
-        
+
         task.mentioned_colleague_id = message.mentions.contacts[0].entity_id
 
     await message.state.fsm.change_state(
-        CreateTaskStates.WAITING_TASK_ATTACHMENT,
-        task=task
+        CreateTaskStates.WAITING_TASK_ATTACHMENT, task=task
     )
 
     await bot.answer_message(
         body="Прикрепите **вложение** (опционально):",
         bubbles=get_skip_button(),
-        keyboard=get_cancel_keyboard_button()
+        keyboard=get_cancel_keyboard_button(),
     )
 
 
 @fsm.on(
-    CreateTaskStates.WAITING_TASK_ATTACHMENT,
-    middlewares=[cancel_creation_middleware]
+    CreateTaskStates.WAITING_TASK_ATTACHMENT, middlewares=[cancel_creation_middleware]
 )
 async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) -> None:
     task = message.state.fsm_storage.task
@@ -133,7 +118,7 @@ async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) ->
             await bot.answer_message(
                 body=strings.WITHOUT_FILE,
                 bubbles=get_skip_button(),
-                keyboard=get_cancel_keyboard_button()
+                keyboard=get_cancel_keyboard_button(),
             )
             return
 
@@ -147,9 +132,7 @@ async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) ->
             attachment.filename = filename
 
     await message.state.fsm.change_state(
-        CreateTaskStates.WAITING_TASK_APPROVE,
-        task=task,
-        attachment=attachment
+        CreateTaskStates.WAITING_TASK_APPROVE, task=task, attachment=attachment
     )
 
     await bot.send(
@@ -158,8 +141,8 @@ async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) ->
 
 
 @fsm.on(
-    CreateTaskStates.WAITING_TASK_APPROVE, 
-    middlewares=[db_session_middleware, cancel_creation_middleware]
+    CreateTaskStates.WAITING_TASK_APPROVE,
+    middlewares=[db_session_middleware, cancel_creation_middleware],
 )
 async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> None:
     task = message.state.fsm_storage.task
@@ -182,22 +165,22 @@ async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> No
     elif message.body == TaskApproveCommands.NO:
         await message.state.fsm.change_state(CreateTaskStates.WAITING_TASK_TITLE)
         await bot.answer_message(
-            body="Введите название задачи:", 
-            keyboard=get_cancel_keyboard_button()
+            body="Введите название задачи:", keyboard=get_cancel_keyboard_button()
         )
     else:
         await bot.send(
-            message=get_task_approve_message(message, task, attachment, TaskApproveCommands)
+            message=get_task_approve_message(
+                message, task, attachment, TaskApproveCommands
+            )
         )
 
 
 @collector.command("/создать", description="Создать новую задачу")
 async def create_task_handler(message: IncomingMessage, bot: Bot) -> None:
     await message.state.fsm.change_state(
-        CreateTaskStates.WAITING_TASK_TITLE, task=TaskInCreation(user_huid=message.sender.huid)
+        CreateTaskStates.WAITING_TASK_TITLE,
+        task=TaskInCreation(user_huid=message.sender.huid),
     )
     await bot.answer_message(
-        body="Введите название задачи:", 
-        keyboard=get_cancel_keyboard_button()
+        body="Введите название задачи:", keyboard=get_cancel_keyboard_button()
     )
-    

@@ -26,9 +26,7 @@ class FileStorage:
         self._storage_path = storage_path
 
     @asynccontextmanager
-    async def file(
-        self, file_uuid: UUID
-    ) -> AsyncIterator[AsyncBufferedReader]:
+    async def file(self, file_uuid: UUID) -> AsyncIterator[AsyncBufferedReader]:
         """Get file object in storage by its UUID."""
 
         file_path = self._get_path_to_file(file_uuid)
