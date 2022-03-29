@@ -6,6 +6,7 @@ from typing import AsyncIterator, Protocol
 from uuid import UUID, uuid4
 
 import aiofiles
+import aiofiles.os
 from aiofiles.tempfile.temptypes import AsyncSpooledTemporaryFile
 
 

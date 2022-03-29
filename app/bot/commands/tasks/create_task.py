@@ -8,12 +8,11 @@ from app.bot import constants
 from app.bot.middlewares.cancel_creation import cancel_creation_middleware
 from app.bot.middlewares.db_session import db_session_middleware
 from app.bot.middlewares.file_checking import file_checking_middleware
-from app.db.attachment.repo import AttachmentRepo
-from app.db.task.repo import TaskRepo
+from app.interactors.create_task import CreateTaskInteractor
 from app.resources import strings
 from app.schemas.attachments import AttachmentInCreation
 from app.schemas.enums import StrEnum
-from app.schemas.tasks import TaskInCreation
+from app.schemas.tasks import Task, TaskInCreation
 from app.services.answers.approve import get_task_approve_message
 from app.services.answers.creation_status import get_status_message
 from app.services.buttons.cancel import get_cancel_keyboard_button
@@ -129,6 +128,7 @@ async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) ->
         CreateTaskStates.WAITING_TASK_APPROVE, task=task, attachment=attachment
     )
 
+    await bot.answer_message(strings.BEFORE_APPROVE)
     await bot.send(
         message=get_task_approve_message(message, task, attachment, TaskApproveCommands)
     )
@@ -139,28 +139,27 @@ async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) ->
     middlewares=[db_session_middleware, cancel_creation_middleware],
 )
 async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> None:
+    # TODO:
     task = message.state.fsm_storage.task
     attachment = message.state.fsm_storage.attachment
 
     db_session = message.state.db_session
 
     if message.body == TaskApproveCommands.YES:
-        attachment_repo = AttachmentRepo(db_session)
-        task_repo = TaskRepo(db_session)
-
-        attachment_id = (await attachment_repo.create_attachment(attachment)).id
-        task.attachment_id = attachment_id
-        await task_repo.create_task(task)
-        await db_session.commit()
+        interactor = CreateTaskInteractor(db_session)
+        task = await interactor.execute(task, attachment)
 
         await message.state.fsm.drop_state()
-        await bot.answer_message(strings.BEFORE_APPROVE)
         await bot.send(message=get_status_message(message, strings.SUCCESS_TITLE))
+    
     elif message.body == TaskApproveCommands.NO:
         await message.state.fsm.change_state(CreateTaskStates.WAITING_TASK_TITLE)
+        if attachment.file_storage_id:
+            await file_storage.remove(attachment.file_storage_id)
         await bot.answer_message(
             body="Введите название задачи:", keyboard=get_cancel_keyboard_button()
         )
+    
     else:
         await bot.send(
             message=get_task_approve_message(
