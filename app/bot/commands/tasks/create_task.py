@@ -7,6 +7,7 @@ from botx_fsm import FSMCollector
 from app.bot import constants
 from app.bot.middlewares.cancel_creation import cancel_creation_middleware
 from app.bot.middlewares.db_session import db_session_middleware
+from app.bot.middlewares.file_checking import file_checking_middleware
 from app.db.attachment.repo import AttachmentRepo
 from app.db.task.repo import TaskRepo
 from app.resources import strings
@@ -107,21 +108,14 @@ async def waiting_task_contact_handler(message: IncomingMessage, bot: Bot) -> No
 
 
 @fsm.on(
-    CreateTaskStates.WAITING_TASK_ATTACHMENT, middlewares=[cancel_creation_middleware]
+    CreateTaskStates.WAITING_TASK_ATTACHMENT,
+    middlewares=[cancel_creation_middleware, file_checking_middleware],
 )
 async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) -> None:
     task = message.state.fsm_storage.task
     attachment = AttachmentInCreation()
 
     if message.body != strings.SKIP_COMMAND:
-        if not message.file:
-            await bot.answer_message(
-                body=strings.WITHOUT_FILE,
-                bubbles=get_skip_button(),
-                keyboard=get_cancel_keyboard_button(),
-            )
-            return
-
         async with message.file.open() as file:
             file_storage_id = await file_storage.save(file)
             filename = message.file.filename
