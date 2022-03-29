@@ -1,26 +1,31 @@
 from botx import BubbleMarkup, IncomingMessage, Mention, OutgoingMessage
+from app.schemas.attachments import AttachmentInCreation
 from app.schemas.enums import StrEnum
+from app.schemas.tasks import TaskInCreation
 
-from app.services.buttons.cancel import cancel_keyboard_button
+from app.services.buttons.cancel import get_cancel_keyboard_button
 
 
 def get_task_approve_message(
     message: IncomingMessage,
-    title: str,
-    text: str,
-    contact: Mention,
-    filename: str,
+    task: TaskInCreation,
+    attachment: AttachmentInCreation,
     commands: StrEnum
 ) -> OutgoingMessage:
-    contact_in_msg = contact if contact else "Без контакта"
-    filename_in_msg = filename if filename else "Без вложения"
-    text = (
-        f"**Название задачи**: {title}\n"
-        f"**Описание задачи**: {text}\n"
-        f"**Контакт**: {contact_in_msg}\n"
-        f"**Вложение**: {filename_in_msg}\n\n"
-        "Все верно?\n\n"
-    ).format(title=title, text=text, contact_in_msg=contact_in_msg, filename_in_msg=filename_in_msg)
+    contact = "Без контакта"
+    if task.mentioned_colleague_id:
+        contact = Mention.contact(huid=task.mentioned_colleague_id)
+
+    file = "Без вложения"
+    if attachment.filename:
+        file = attachment.filename
+
+    text = '\n'.join([
+        f"**Название задачи**: {task.title}",
+        f"**Описание задачи**: {task.description}",
+        f"**Контакт**: {contact}\n",
+        f"**Вложение**: {file}\n\n"
+    ])
 
     bubbles = BubbleMarkup()
     bubbles.add_button(command=commands.YES, label="Да")
@@ -31,5 +36,5 @@ def get_task_approve_message(
         chat_id=message.chat.id,
         body=text,
         bubbles=bubbles,
-        keyboard=cancel_keyboard_button()
+        keyboard=get_cancel_keyboard_button()
     )

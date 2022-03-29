@@ -3,7 +3,7 @@ from uuid import UUID
 
 from app.db.crud import CRUD
 from app.db.sqlalchemy import AsyncSession
-from app.schemas.tasks import Task
+from app.schemas.tasks import Task, TaskInCreation
 from app.db.task.models import TaskModel
 
 
@@ -13,18 +13,14 @@ class TaskRepo:
 
     async def create_task(
         self, 
-        user_huid: UUID, 
-        title: str, 
-        description: str, 
-        mentioned_colleague_id: Optional[UUID],
-        attachment_id: Optional[int]
+        task_in_creation: TaskInCreation
     ) -> Task:
         model_data = {
-            "user_huid": user_huid,
-            "title": title,
-            "description": description,
-            "mentioned_colleague_id": mentioned_colleague_id,
-            "attachment_id": attachment_id
+            "user_huid": task_in_creation.user_huid,
+            "title": task_in_creation.title,
+            "description": task_in_creation.description,
+            "mentioned_colleague_id": task_in_creation.mentioned_colleague_id,
+            "attachment_id": task_in_creation.attachment_id
         }
         row = await self._crud.create(model_data=model_data)
 

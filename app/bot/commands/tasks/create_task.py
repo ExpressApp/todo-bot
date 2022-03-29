@@ -10,11 +10,13 @@ from app.bot.middlewares.db_session import db_session_middleware
 from app.db.attachment.repo import AttachmentRepo
 from app.db.task.repo import TaskRepo
 from app.resources import strings
+from app.schemas.attachments import AttachmentInCreation
 from app.schemas.enums import StrEnum
+from app.schemas.tasks import TaskInCreation
 from app.services.answers.approve import get_task_approve_message
 from app.services.answers.creation_status import get_status_message
-from app.services.buttons.cancel import cancel_keyboard_button
-from app.services.buttons.skip import skip_button
+from app.services.buttons.cancel import get_cancel_keyboard_button
+from app.services.buttons.skip import get_skip_button
 from app.services.file_storage import FileStorage
 
 
@@ -41,13 +43,23 @@ fsm = FSMCollector(CreateTaskStates)
     middlewares=[cancel_creation_middleware]
 )
 async def waiting_task_title_handler(message: IncomingMessage, bot: Bot) -> None:
+    if message.file:
+        await bot.answer_message(
+            body=strings.FILE_NOT_TITLE,
+            keyboard=get_cancel_keyboard_button()
+        )
+        return
+
+    task = message.state.fsm_storage.task
+    task.title = message.body
+
     await message.state.fsm.change_state(
         CreateTaskStates.WAITING_TASK_TEXT,
-        title=message.body,
+        task=task,
     )
     await bot.answer_message(
         body="Введите текст задачи:",
-        keyboard=cancel_keyboard_button()
+        keyboard=get_cancel_keyboard_button()
     )
 
 
@@ -56,18 +68,25 @@ async def waiting_task_title_handler(message: IncomingMessage, bot: Bot) -> None
     middlewares=[cancel_creation_middleware]
 )
 async def waiting_task_text_handler(message: IncomingMessage, bot: Bot) -> None:
-    title = message.state.fsm_storage.title
-    text = message.body
+    if message.file:
+        await bot.answer_message(
+            body=strings.FILE_NOT_DESCRIPTION,
+            keyboard=get_cancel_keyboard_button()
+        )
+        return
+    
+    task = message.state.fsm_storage.task
+    task.description = message.body
+
     await message.state.fsm.change_state(
         CreateTaskStates.WAITING_TASK_CONTACT,
-        title=title,
-        text=text
+        task=task
     )
 
     await bot.answer_message(
         body="При необходимости отметьте **одного коллегу**, связанного с задачей, через `@@`:",
-        bubbles=skip_button(),
-        keyboard=cancel_keyboard_button()
+        bubbles=get_skip_button(),
+        keyboard=get_cancel_keyboard_button()
     )
 
 
@@ -76,32 +95,28 @@ async def waiting_task_text_handler(message: IncomingMessage, bot: Bot) -> None:
     middlewares=[cancel_creation_middleware]
 )
 async def waiting_task_contact_handler(message: IncomingMessage, bot: Bot) -> None:
-    title = message.state.fsm_storage.title
-    text = message.state.fsm_storage.text
+    task = message.state.fsm_storage.task
 
-    if message.body == strings.SKIP_COMMAND:
-        contact = None
-    else:
-        try:
-            contact = message.mentions.contacts[0]
-        except:
+    if message.body != strings.SKIP_COMMAND:
+        if len(message.mentions.contacts) != 1:
             await bot.answer_message(
                 body=strings.INCORRECT_CONTACT, 
-                bubbles=skip_button(),
-                keyboard=cancel_keyboard_button())
+                bubbles=get_skip_button(),
+                keyboard=get_cancel_keyboard_button()
+            )
             return
+        
+        task.mentioned_colleague_id = message.mentions.contacts[0].entity_id
 
     await message.state.fsm.change_state(
         CreateTaskStates.WAITING_TASK_ATTACHMENT,
-        title=title,
-        text=text,
-        contact=contact
+        task=task
     )
 
     await bot.answer_message(
         body="Прикрепите **вложение** (опционально):",
-        bubbles=skip_button(),
-        keyboard=cancel_keyboard_button()
+        bubbles=get_skip_button(),
+        keyboard=get_cancel_keyboard_button()
     )
 
 
@@ -110,37 +125,35 @@ async def waiting_task_contact_handler(message: IncomingMessage, bot: Bot) -> No
     middlewares=[cancel_creation_middleware]
 )
 async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) -> None:
-    title = message.state.fsm_storage.title
-    text = message.state.fsm_storage.text
-    contact = message.state.fsm_storage.contact
+    task = message.state.fsm_storage.task
+    attachment = AttachmentInCreation()
 
-    if message.body == strings.SKIP_COMMAND:
-        file_storage_id = None
-        filename = None
-    else:
-        try:
-            async with message.file.open() as file:
-                file_storage_id = await file_storage.save(file)
-                filename = message.file.filename
-        except:
+    if message.body != strings.SKIP_COMMAND:
+        if not message.file:
             await bot.answer_message(
                 body=strings.WITHOUT_FILE,
-                bubbles=skip_button(),
-                keyboard=cancel_keyboard_button()
+                bubbles=get_skip_button(),
+                keyboard=get_cancel_keyboard_button()
             )
             return
 
+        async with message.file.open() as file:
+            file_storage_id = await file_storage.save(file)
+            filename = message.file.filename
+
+            task.attachment_id = file_storage_id
+
+            attachment.file_storage_id = file_storage_id
+            attachment.filename = filename
+
     await message.state.fsm.change_state(
         CreateTaskStates.WAITING_TASK_APPROVE,
-        title=title,
-        text=text,
-        contact=contact,
-        file_storage_id=file_storage_id,
-        filename=filename
+        task=task,
+        attachment=attachment
     )
 
     await bot.send(
-        message=get_task_approve_message(message, title, text, contact, filename, TaskApproveCommands)
+        message=get_task_approve_message(message, task, attachment, TaskApproveCommands)
     )
 
 
@@ -149,11 +162,8 @@ async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) ->
     middlewares=[db_session_middleware, cancel_creation_middleware]
 )
 async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> None:
-    title = message.state.fsm_storage.title
-    text = message.state.fsm_storage.text
-    contact = message.state.fsm_storage.contact
-    file_storage_id = message.state.fsm_storage.file_storage_id
-    filename = message.state.fsm_storage.filename
+    task = message.state.fsm_storage.task
+    attachment = message.state.fsm_storage.attachment
 
     db_session = message.state.db_session
 
@@ -161,14 +171,9 @@ async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> No
         attachment_repo = AttachmentRepo(db_session)
         task_repo = TaskRepo(db_session)
 
-        attachment_id = (await attachment_repo.create_attachment(file_storage_id, filename)).id
-        await task_repo.create_task(
-            message.sender.huid,
-            title,
-            text,
-            contact.entity_id,
-            attachment_id
-        )
+        attachment_id = (await attachment_repo.create_attachment(attachment)).id
+        task.attachment_id = attachment_id
+        await task_repo.create_task(task)
         await db_session.commit()
 
         await message.state.fsm.drop_state()
@@ -178,19 +183,21 @@ async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> No
         await message.state.fsm.change_state(CreateTaskStates.WAITING_TASK_TITLE)
         await bot.answer_message(
             body="Введите название задачи:", 
-            keyboard=cancel_keyboard_button()
+            keyboard=get_cancel_keyboard_button()
         )
     else:
         await bot.send(
-            message=get_task_approve_message(message, title, text, contact, filename, TaskApproveCommands)
+            message=get_task_approve_message(message, task, attachment, TaskApproveCommands)
         )
 
 
 @collector.command("/создать", description="Создать новую задачу")
 async def create_task_handler(message: IncomingMessage, bot: Bot) -> None:
-    await message.state.fsm.change_state(CreateTaskStates.WAITING_TASK_TITLE)
+    await message.state.fsm.change_state(
+        CreateTaskStates.WAITING_TASK_TITLE, task=TaskInCreation(user_huid=message.sender.huid)
+    )
     await bot.answer_message(
         body="Введите название задачи:", 
-        keyboard=cancel_keyboard_button()
+        keyboard=get_cancel_keyboard_button()
     )
     

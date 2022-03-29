@@ -1,11 +1,9 @@
 from uuid import UUID
 
-from aiofiles.tempfile.temptypes import AsyncSpooledTemporaryFile
-
 from app.db.attachment.models import AttachmentModel
 from app.db.crud import CRUD
 from app.db.sqlalchemy import AsyncSession
-from app.schemas.attachments import Attachment
+from app.schemas.attachments import Attachment, AttachmentInCreation
 
 
 class AttachmentRepo:
@@ -15,9 +13,10 @@ class AttachmentRepo:
 
     async def create_attachment(
         self, 
-        file_storage_id: UUID, 
-        filename: str
+        attachment_in_creation: AttachmentInCreation
     ) -> Attachment:
+        file_storage_id = attachment_in_creation.file_storage_id
+        filename = attachment_in_creation.filename
         
         row = await self._crud.create(
             model_data={"file_storage_id": file_storage_id, "filename": filename},
