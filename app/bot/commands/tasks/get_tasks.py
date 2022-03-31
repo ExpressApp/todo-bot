@@ -1,6 +1,5 @@
-from typing import List, Optional
+from typing import List
 from uuid import UUID
-from black import out
 
 from botx import (
     Bot,
