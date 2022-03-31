@@ -2,7 +2,7 @@ from enum import Enum, auto
 from pathlib import Path
 
 from botx import Bot, HandlerCollector, IncomingMessage
-from botx_fsm import FSMCollector
+from pybotx_fsm import FSMCollector
 
 from app.bot import constants
 from app.bot.middlewares.cancel_creation import cancel_creation_middleware
