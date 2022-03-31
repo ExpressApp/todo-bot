@@ -8,9 +8,9 @@ from botx import (
     EditMessage,
     HandlerCollector,
     IncomingMessage,
+    Mention,
     OutgoingMessage,
 )
-from pybotx_smart_logger.logger import smart_log
 from pydantic import parse_obj_as
 
 from app.bot.middlewares.db_session import db_session_middleware
@@ -82,7 +82,7 @@ class ListTasksWidget:
             buttons.append(
                 Button(
                     command="/список",
-                    label=f"Назад к [{self._current_task_index - 2}-{self._current_task_index - 1}]",
+                    label=f"⬅️ Назад к [{self._current_task_index - 2}-{self._current_task_index - 1}]",
                     data={
                         "current_task_index": self._current_task_index - 2 - self._current_task_index % 2,
                         "current_page": self._current_page - 1
@@ -94,7 +94,7 @@ class ListTasksWidget:
             buttons.append(
                 Button(
                     command="/список",
-                    label=f"Вперед к [{self._current_task_index + 2}-{self._current_task_index + 3}]",
+                    label=f"Вперед к [{self._current_task_index + 2}-{self._current_task_index + 3}] ➡️",
                     data={
                         "current_task_index": self._current_task_index + 1,
                         "current_page": self._current_page + 1
@@ -123,7 +123,7 @@ class ListTasksWidget:
         bubbles = BubbleMarkup()
         bubbles.add_button(
             command="/expand-task",
-            label="Подробнее",
+            label="Раскрыть задачу полностью",
             data={
                 "task_id": task.id,
                 "tasks": self._tasks,
@@ -138,10 +138,13 @@ class ListTasksWidget:
         else:
             task_text = task.description
 
+        colleague_id = task.mentioned_colleague_id
+        contact = Mention.contact(colleague_id) if colleague_id else "Без контакта"
+
         return OutgoingMessage(
             bot_id=self._message.bot.id,
             chat_id=self._message.chat.id,
-            body=f"**{task.title}**\n\n{task_text}",
+            body=f"**{task.title}**\n\n{task_text}\n\n**Контакт:** {contact}",
             bubbles=bubbles,
             metadata={"tasks": self._tasks, "sync_id": self._sync_id},
         )
