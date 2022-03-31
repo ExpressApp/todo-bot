@@ -1,5 +1,6 @@
 from typing import List, Optional
 from uuid import UUID
+from black import out
 
 from botx import (
     Bot,
@@ -11,9 +12,11 @@ from botx import (
     Mention,
     OutgoingMessage,
 )
+from pybotx_smart_logger.logger import smart_log
 from pydantic import parse_obj_as
 
 from app.bot.middlewares.db_session import db_session_middleware
+from app.bot.constants import TASKS_LIST_PAGE_SIZE
 from app.db.task.repo import TaskRepo
 from app.schemas.tasks import Task
 
@@ -26,14 +29,12 @@ class ListTasksWidget:
     def __init__(self, message: IncomingMessage):
         self.is_updating = "tasks" in message.metadata
 
-        self._sync_id = parse_obj_as(Optional[UUID], message.metadata.get("sync_id", None))
+        self._sync_ids = parse_obj_as(List[UUID], message.metadata.get("sync_ids", []))
         self._message = message
         self._tasks = parse_obj_as(List[Task], message.metadata.get("tasks", []))
         
         self._current_task_index = message.data.get("current_task_index", 0)
         self._current_page = message.data.get("current_page", 0)
-
-        self._last_in_page = False
 
     def set_tasks(self, tasks: List[Task]) -> None:  # noqa: WPS615
         self._tasks = tasks
@@ -42,38 +43,51 @@ class ListTasksWidget:
         assert self._tasks, "You must fetch tasks first."
 
         if self.is_updating:
-            await self._update_message(bot, self._sync_id)
-
-            # Костыль
-            self._current_task_index += 1
-            self._last_in_page = True
-
             await self._update_message(bot)
-            # Костыль
-            self._last_in_page = False
         else:
             await self._send_message(bot)
 
-    async def _update_message(self, bot: Bot, sync_id: Optional[UUID]=None) -> None:
-        if not sync_id:
-            sync_id = self._message.source_sync_id
-        message = self._outgoing_to_edit_message(
-            self._get_task_message(),
-            sync_id,
-        )
-        await bot.edit(message=message)
+    async def _update_message(self, bot: Bot) -> None:
+        sync_ids = self._sync_ids + [self._message.source_sync_id]
+
+        outgoing_messages = self._get_messages()
+
+        to_edit_messages = []
+        for message, sync_id in zip(outgoing_messages, sync_ids):
+            to_edit_messages.append(
+                self._outgoing_to_edit_message(message, sync_id)
+            )         
+
+        for message in to_edit_messages:
+            await bot.edit(message=message)
 
     async def _send_message(self, bot: Bot) -> None:
-        sync_id = await bot.send(message=self._get_task_message())
-        self._sync_id = sync_id
-        
-        # Костыль
-        self._current_task_index += 1
-        self._last_in_page = True
-        
-        await bot.send(message=self._get_task_message())
-        # Костыль
-        self._last_in_page = False
+        messages = self._get_messages()
+
+        for i in range(TASKS_LIST_PAGE_SIZE):
+            sync_id = await bot.send(message=messages[i])
+            if i != TASKS_LIST_PAGE_SIZE - 1:
+                self._sync_ids.append(sync_id)
+
+    def _get_messages(self) -> List[OutgoingMessage]:
+        messages = []
+
+        for i in range(TASKS_LIST_PAGE_SIZE):
+            message = self._get_task_message()
+            messages.append(message)
+            if i != TASKS_LIST_PAGE_SIZE - 1:
+                self._current_task_index += 1
+
+        if messages[-1].bubbles:
+            messages[-1].bubbles.add_row(self._get_control_buttons())
+        else:
+            bubbles = BubbleMarkup()
+            bubbles.add_row(self._get_control_buttons())
+            messages[-1].bubbles = bubbles
+        messages[-1].metadata = {"tasks": self._tasks, "sync_ids": self._sync_ids}
+
+        return messages
+
 
     def _get_control_buttons(self) -> List[Button]:
         buttons = []
@@ -105,17 +119,11 @@ class ListTasksWidget:
         return buttons
 
     def _get_task_message(self) -> OutgoingMessage:
-        # Можно и нужно сделать лучше
         if self._current_task_index > len(self._tasks) - 1:
-            bubbles = BubbleMarkup()
-            if self._last_in_page:
-                bubbles.add_row(self._get_control_buttons())
             return OutgoingMessage(
                 bot_id=self._message.bot.id,
                 chat_id=self._message.chat.id,
                 body="У вас больше нет задач",
-                bubbles=bubbles,
-                metadata={"tasks": self._tasks, "sync_id": self._sync_id}
             )
 
         task = self._tasks[self._current_task_index]
@@ -130,8 +138,6 @@ class ListTasksWidget:
                 "current_task_index": self._current_task_index,
             },
         )
-        if self._last_in_page:
-            bubbles.add_row(self._get_control_buttons())
 
         if len(task.description) > MAX_PREVIEW_TEXT_LEN:
             task_text = task.description[:MAX_PREVIEW_TEXT_LEN]
@@ -145,8 +151,7 @@ class ListTasksWidget:
             bot_id=self._message.bot.id,
             chat_id=self._message.chat.id,
             body=f"**{task.title}**\n\n{task_text}\n\n**Контакт:** {contact}",
-            bubbles=bubbles,
-            metadata={"tasks": self._tasks, "sync_id": self._sync_id},
+            bubbles=bubbles
         )
 
     def _outgoing_to_edit_message(
