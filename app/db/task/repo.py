@@ -25,10 +25,6 @@ class TaskRepo:
 
         return self._to_domain(task_in_db)
 
-<<<<<<< Updated upstream
-    async def get_users_task(self, user_huid: UUID) -> List[Task]:
-        pass
-=======
     async def get_user_tasks(self, user_huid: UUID) -> List[Task]:
         tasks_in_db = await self._crud.get_by_field(
             field="user_huid",
@@ -36,7 +32,7 @@ class TaskRepo:
         )
 
         return [self._to_domain(task) for task in tasks_in_db]
->>>>>>> Stashed changes
+
 
     async def get_task(self, task_id: int) -> Task:
         pass
