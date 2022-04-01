@@ -30,10 +30,10 @@ class ChangeTaskDecriptionState(Enum):
     WAITING_NEW_DESCRIPTION = auto()
 
 
-def expanded_task_messages(
+def build_expanded_task_messages(
     message: IncomingMessage, 
-    outgoing_attachment: Union[OutgoingAttachment, None],
     task: Task,
+    outgoing_attachment: Union[OutgoingAttachment, None],
 ) -> List[OutgoingMessage]:
     messages = []
 
@@ -77,7 +77,7 @@ def expanded_task_messages(
     return messages
 
 
-def success_message(message: IncomingMessage) -> OutgoingMessage:
+def build_success_message(message: IncomingMessage) -> OutgoingMessage:
     bubbles = BubbleMarkup()
     bubbles.add_button(
         command="/список",
@@ -142,7 +142,6 @@ class ListTasksWidget:
 
         sync_ids = [await bot.send(message=message) for message in messages]
         last_message = self._prepare_last_message(last_message, sync_ids)
-        self._sync_ids = sync_ids
 
         await bot.send(message=last_message)
 
@@ -301,10 +300,10 @@ async def expand_task(message: IncomingMessage, bot: Bot) -> None:
         async with file_storage.file(attachment.file_storage_id) as file:
             outgoing_attachment = await OutgoingAttachment.from_async_buffer(file, attachment.filename)
 
-    messages = expanded_task_messages(
+    messages = build_expanded_task_messages(
         message,
+        task,
         outgoing_attachment,
-        task
     )
 
     for message in messages:
@@ -338,4 +337,4 @@ async def waiting_new_description_handler(message: IncomingMessage, bot: Bot) ->
     await db_session.commit()
 
     await message.state.fsm.drop_state()
-    await bot.send(message=success_message(message))
+    await bot.send(message=build_success_message(message))
