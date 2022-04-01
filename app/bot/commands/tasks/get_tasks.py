@@ -1,3 +1,4 @@
+from enum import Enum, auto
 from pathlib import Path
 from typing import List
 from uuid import UUID
@@ -13,6 +14,7 @@ from botx import (
     OutgoingAttachment,
     OutgoingMessage,
 )
+from pybotx_fsm import FSMCollector
 from pydantic import parse_obj_as
 from app.bot import constants
 
@@ -250,4 +252,48 @@ async def expand_task(message: IncomingMessage, bot: Bot) -> None:
             body=f"**{task.title}**\n\n{task.description}\n\n**Контакт:** {contact}",
             bubbles=bubbles
         )
-        
+
+class ChangeTaskDecriptionState(Enum):
+    WAITING_NEW_DESCRIPTION = auto()
+
+fsm = FSMCollector(ChangeTaskDecriptionState)
+
+@collector.command("/изменить", visible=False)
+async def delete_task(message: IncomingMessage, bot: Bot) -> None:
+    task_id = message.data["task_id"]
+
+    await message.state.fsm.change_state(
+        ChangeTaskDecriptionState.WAITING_NEW_DESCRIPTION,
+        task_id = task_id
+    )
+    
+    await bot.answer_message(body="Укажите новое описание задачи:")
+    
+@fsm.on(
+    ChangeTaskDecriptionState.WAITING_NEW_DESCRIPTION,
+    middlewares=[db_session_middleware]
+)
+async def waiting_new_description_handler(message: IncomingMessage, bot: Bot) -> None:
+    new_description = message.body
+    task_id = message.state.fsm_storage.task_id
+
+    db_session = message.state.db_session
+    task_repo = TaskRepo(db_session)
+    
+    await task_repo.change_task_description(task_id, new_description)
+    await db_session.commit()
+
+    bubbles = BubbleMarkup()
+    bubbles.add_button(
+        command="/список",
+        label="Вернуться к списку задач"
+    )
+    outgoing_message = OutgoingMessage(
+        bot_id=message.bot.id,
+        chat_id=message.chat.id,
+        body="Описание задачи изменено.",
+        bubbles=bubbles
+    )
+
+    await message.state.fsm.drop_state()
+    await bot.send(message=outgoing_message)

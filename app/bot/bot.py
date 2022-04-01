@@ -16,7 +16,7 @@ def get_bot() -> Bot:
         bot_accounts=settings.BOT_CREDENTIALS,
         exception_handlers={Exception: internal_error_handler},
         middlewares=[
-            FSMMiddleware([create_task.fsm], state_repo_key="redis_repo"),
+            FSMMiddleware([create_task.fsm, get_tasks.fsm], state_repo_key="redis_repo"),
             BotXSmartLoggerMiddleware(debug_enabled_for_message=True).dispatch
         ],
     )

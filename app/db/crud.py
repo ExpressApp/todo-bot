@@ -85,3 +85,12 @@ class CRUD:
 
         rows = await self._session.execute(query)
         return rows.scalars().all()
+
+    async def get_by_field_id_asc(self, *, field: str, field_value: Any) -> Any:
+        """Return objects from db with condition field=val."""
+        query = select(self._cls_model).where(
+            getattr(self._cls_model, field) == field_value
+        ).order_by(self._cls_model.id)
+
+        rows = await self._session.execute(query)
+        return rows.scalars().all()

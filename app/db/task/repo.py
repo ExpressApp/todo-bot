@@ -26,7 +26,7 @@ class TaskRepo:
         return self._to_domain(task_in_db)
 
     async def get_user_tasks(self, user_huid: UUID) -> List[Task]:
-        tasks_in_db = await self._crud.get_by_field(
+        tasks_in_db = await self._crud.get_by_field_id_asc(
             field="user_huid",
             field_value=user_huid
         )
@@ -41,8 +41,11 @@ class TaskRepo:
     async def delete_task(self, task_id: int) -> None:
         pass
 
-    async def change_task_description(self, task_id: int) -> Task:
-        pass
+    async def change_task_description(self, task_id: int, description: str) -> Task:
+        await self._crud.update(
+            pkey_val=task_id,
+            model_data={"description": description}
+        )
 
     def _to_domain(self, task_in_db: TaskModel) -> Task:
         return Task(

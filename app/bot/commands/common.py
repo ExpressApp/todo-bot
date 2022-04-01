@@ -71,7 +71,7 @@ async def default_handler(
 
     bubbles = BubbleMarkup()
     bubbles.add_button(command="/создать", label=strings.CREATE_TASK_LABEL)
-    bubbles.add_button(command="", label=strings.LIST_TASKS_LABEL)
+    bubbles.add_button(command="/список", label=strings.LIST_TASKS_LABEL)
 
     await bot.answer_message(body=strings.DEFAULT_MESSAGE, bubbles=bubbles)
 
