@@ -1,14 +1,29 @@
 """Storage for saving and reading files."""
 
 from contextlib import asynccontextmanager
+import os
 from pathlib import Path
-from typing import AsyncIterator, Protocol
+from typing import AsyncIterator, Optional
 from uuid import UUID, uuid4
 
 import aiofiles
 import aiofiles.os
 from aiofiles.tempfile.temptypes import AsyncSpooledTemporaryFile
-from botx.async_buffer import AsyncBufferReadable
+
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol  # type: ignore  # noqa: WPS440
+
+
+class AsyncBufferBase(Protocol):
+    async def seek(self, cursor: int, whence: int = os.SEEK_SET) -> int:
+        ...  # noqa: WPS428
+
+
+class AsyncBufferReadable(AsyncBufferBase):
+    async def read(self, bytes_to_read: Optional[int] = None) -> bytes:
+        ...  # noqa: WPS428
 
 
 class FileStorage:
