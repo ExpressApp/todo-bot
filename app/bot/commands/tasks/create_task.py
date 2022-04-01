@@ -12,7 +12,7 @@ from app.interactors.create_task import CreateTaskInteractor
 from app.resources import strings
 from app.schemas.attachments import AttachmentInCreation
 from app.schemas.enums import StrEnum
-from app.schemas.tasks import Task, TaskInCreation
+from app.schemas.tasks import TaskInCreation
 from app.services.answers.approve import get_task_approve_message
 from app.services.answers.creation_status import get_status_message
 from app.services.buttons.cancel import get_cancel_keyboard_button
