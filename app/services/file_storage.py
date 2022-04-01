@@ -8,11 +8,7 @@ from uuid import UUID, uuid4
 import aiofiles
 import aiofiles.os
 from aiofiles.tempfile.temptypes import AsyncSpooledTemporaryFile
-
-
-class AsyncBufferedReader(Protocol):
-    async def read(self, size: int = -1) -> bytes:
-        ...
+from botx.async_buffer import AsyncBufferReadable
 
 
 class FileStorage:
@@ -27,7 +23,7 @@ class FileStorage:
         self._storage_path = storage_path
 
     @asynccontextmanager
-    async def file(self, file_uuid: UUID) -> AsyncIterator[AsyncBufferedReader]:
+    async def file(self, file_uuid: UUID) -> AsyncIterator[AsyncBufferReadable]:
         """Get file object in storage by its UUID."""
 
         file_path = self._get_path_to_file(file_uuid)

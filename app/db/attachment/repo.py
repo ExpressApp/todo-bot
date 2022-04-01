@@ -21,8 +21,9 @@ class AttachmentRepo:
 
         return self._to_domain(attachment_in_db)
 
-    async def get_attachment_name(self, attachment_id: int) -> str:
-        pass
+    async def get_attachment(self, attachment_id: int) -> Attachment:
+        attachment_in_db = await self._crud.get(pkey_val=attachment_id)
+        return self._to_domain(attachment_in_db)
 
     async def remove_attachment(self, attachment_id: int) -> None:
         pass

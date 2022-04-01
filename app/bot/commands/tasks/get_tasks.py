@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List
 from uuid import UUID
 
@@ -9,19 +10,22 @@ from botx import (
     HandlerCollector,
     IncomingMessage,
     Mention,
+    OutgoingAttachment,
     OutgoingMessage,
 )
-from pybotx_smart_logger.logger import smart_log
 from pydantic import parse_obj_as
+from app.bot import constants
 
 from app.bot.middlewares.db_session import db_session_middleware
-from app.bot.constants import TASKS_LIST_PAGE_SIZE
+from app.bot import constants
+from app.db.attachment.repo import AttachmentRepo
 from app.db.task.repo import TaskRepo
 from app.schemas.tasks import Task
+from app.services.file_storage import FileStorage
 
 collector = HandlerCollector()
 
-MAX_PREVIEW_TEXT_LEN = 100
+file_storage = FileStorage(Path(constants.FILE_STORAGE_PATH))
 
 
 class ListTasksWidget:
@@ -47,45 +51,49 @@ class ListTasksWidget:
             await self._send_message(bot)
 
     async def _update_message(self, bot: Bot) -> None:
-        sync_ids = self._sync_ids + [self._message.source_sync_id]
+        *messages, last_message = self._get_messages()
+        last_message = self._prepare_last_message(last_message)
 
-        outgoing_messages = self._get_messages()
+        edit_messages = [
+            self._outgoing_to_edit_message(message, sync_id)
+            for message, sync_id in zip(
+                messages + [last_message],
+                self._sync_ids + [self._message.source_sync_id]
+            )
+        ]
 
-        to_edit_messages = []
-        for message, sync_id in zip(outgoing_messages, sync_ids):
-            to_edit_messages.append(
-                self._outgoing_to_edit_message(message, sync_id)
-            )         
-
-        for message in to_edit_messages:
+        for message in edit_messages:
             await bot.edit(message=message)
 
     async def _send_message(self, bot: Bot) -> None:
-        messages = self._get_messages()
+        *messages, last_message = self._get_messages()
 
-        for i in range(TASKS_LIST_PAGE_SIZE):
-            sync_id = await bot.send(message=messages[i])
-            if i != TASKS_LIST_PAGE_SIZE - 1:
-                self._sync_ids.append(sync_id)
+        self._sync_ids = [await bot.send(message=message) for message in messages]
+
+        last_message = self._prepare_last_message(last_message)
+        await bot.send(message=last_message)
 
     def _get_messages(self) -> List[OutgoingMessage]:
         messages = []
 
-        for i in range(TASKS_LIST_PAGE_SIZE):
+        for i in range(constants.TASKS_LIST_PAGE_SIZE):
             message = self._get_task_message()
             messages.append(message)
-            if i != TASKS_LIST_PAGE_SIZE - 1:
+            if i != constants.TASKS_LIST_PAGE_SIZE - 1:
                 self._current_task_index += 1
 
-        if messages[-1].bubbles:
-            messages[-1].bubbles.add_row(self._get_control_buttons())
+        return messages
+
+    def _prepare_last_message(self, last_message: OutgoingMessage) -> OutgoingMessage:
+        if last_message.bubbles:
+            last_message.bubbles.add_row(self._get_control_buttons())
         else:
             bubbles = BubbleMarkup()
             bubbles.add_row(self._get_control_buttons())
-            messages[-1].bubbles = bubbles
-        messages[-1].metadata = {"tasks": self._tasks, "sync_ids": self._sync_ids}
-
-        return messages
+            last_message.bubbles = bubbles
+        last_message.metadata = {"tasks": self._tasks, "sync_ids": self._sync_ids}
+        
+        return last_message
 
 
     def _get_control_buttons(self) -> List[Button]:
@@ -138,8 +146,8 @@ class ListTasksWidget:
             },
         )
 
-        if len(task.description) > MAX_PREVIEW_TEXT_LEN:
-            task_text = task.description[:MAX_PREVIEW_TEXT_LEN]
+        if len(task.description) > constants.MAX_PREVIEW_TEXT_LEN:
+            task_text = task.description[:constants.MAX_PREVIEW_TEXT_LEN]
         else:
             task_text = task.description
 
@@ -178,11 +186,68 @@ async def get_tasks(message: IncomingMessage, bot: Bot) -> None:
     if not widget.is_updating:
         task_repo = TaskRepo(message.state.db_session)
         tasks = await task_repo.get_user_tasks(message.sender.huid)
-
+        
         if not tasks:
-            await bot.send("У вас нет задач")
+            await bot.answer_message("У вас нет задач")
             return
+        
+        await bot.answer_message(
+            body=f"**Задач в списке**: {len(tasks)}"
+        )
 
         widget.set_tasks(tasks)
 
     await widget.send(bot)
+
+@collector.command(
+    "/expand-task",
+    visible=False,
+    middlewares=[db_session_middleware],
+)
+async def expand_task(message: IncomingMessage, bot: Bot) -> None:
+    assert message.source_sync_id
+
+    attachment_repo = AttachmentRepo(message.state.db_session)
+    task_repo = TaskRepo(message.state.db_session)
+    
+    task_id = message.data["task_id"]
+
+    task = await task_repo.get_task(task_id)
+    outgoin_attachment = None
+    if task.attachment_id:
+        attachment = await attachment_repo.get_attachment(task.attachment_id)
+
+        async with file_storage.file(attachment.file_storage_id) as file:
+            outgoin_attachment = await OutgoingAttachment.from_async_buffer(file, attachment.filename)
+
+    bubbles = BubbleMarkup()
+    bubbles.add_button(
+        "/изменить",
+        "Изменить описание",
+        {"task_id": task.id},
+    )
+    bubbles.add_button(
+        "/delete-task",
+        "Удалить",
+        {"task_id": task_id},
+    )
+    bubbles.add_button(
+        "/список",
+        "К списку задач",
+    )
+
+    colleague_id = task.mentioned_colleague_id
+    contact = Mention.contact(colleague_id) if colleague_id else "Без контакта"
+
+    if outgoin_attachment:
+        await bot.answer_message(
+            body=f"**{task.title}**\n\n{task.description}\n\n**Контакт:** {contact}",
+        )
+        if outgoin_attachment:
+            await bot.answer_message(body="", bubbles=bubbles, file=outgoin_attachment)
+    else:
+        await bot.answer_message(
+            body=f"**{task.title}**\n\n{task.description}\n\n**Контакт:** {contact}",
+            bubbles=bubbles
+        )
+        
