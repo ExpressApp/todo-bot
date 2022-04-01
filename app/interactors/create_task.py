@@ -17,8 +17,9 @@ class CreateTaskInteractor:
         attachment_repo = AttachmentRepo(self._db_session)
         task_repo = TaskRepo(self._db_session)
 
-        attachment = await attachment_repo.create_attachment(attachment_in_creation)
-        task_in_creation.attachment_id = attachment.id
+        if attachment_in_creation.file_storage_id:
+            attachment = await attachment_repo.create_attachment(attachment_in_creation)
+            task_in_creation.attachment_id = attachment.id
         task = await task_repo.create_task(task_in_creation)
         await self._db_session.commit()
 
