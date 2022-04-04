@@ -46,7 +46,7 @@ async def delete_task(message: IncomingMessage, bot: Bot) -> None:
     if task.attachment_id:
         attachment = await attachment_repo.get_attachment(task.attachment_id)
         await attachment_repo.remove_attachment(attachment.id)
-        file_storage.remove(attachment.file_storage_id)
+        await file_storage.remove(attachment.file_storage_id)
     
     await db_session.commit()
 
