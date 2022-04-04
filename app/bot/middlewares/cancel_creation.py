@@ -4,7 +4,7 @@
 from botx import Bot, IncomingMessage, IncomingMessageHandlerFunc
 
 from app.resources.strings import CANCEL_COMMAND, CANCEL_TITLE
-from app.services.answers.creation_status import get_status_message
+from app.services.answers.status import get_status_message
 
 
 async def cancel_creation_middleware(
