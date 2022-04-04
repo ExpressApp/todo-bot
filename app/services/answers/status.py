@@ -6,7 +6,7 @@ from app.resources.strings import CREATE_TASK_LABEL, LIST_TASKS_LABEL
 
 def get_status_message(message: IncomingMessage, title: Optional[str]=None) -> OutgoingMessage:
     body = [
-        f"**title**\n\n" if title else "",
+        f"**{title}**\n\n" if title else "",
         "Для дальнейшей работы нажмите любую из кнопок ниже:"
     ]
 
