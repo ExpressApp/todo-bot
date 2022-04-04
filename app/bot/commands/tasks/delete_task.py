@@ -1,26 +1,14 @@
 from pathlib import Path
 
-from botx import Bot, BubbleMarkup, HandlerCollector, IncomingMessage, OutgoingMessage
+from botx import Bot, BubbleMarkup, HandlerCollector, IncomingMessage
 
 from app.bot import constants
 from app.bot.middlewares.db_session import db_session_middleware
 from app.db.attachment.repo import AttachmentRepo
 from app.db.task.repo import TaskRepo
-from app.resources import strings
 from app.services.answers.status import get_status_message
 from app.services.file_storage import FileStorage
 
-
-def build_outgoing_message(message: IncomingMessage) -> OutgoingMessage:
-    body = "Для дальнейшей работы нажмите любую из кнопок ниже:"
-
-    bubbles = BubbleMarkup()
-    bubbles.add_button(command="/создать", label=strings.CREATE_TASK_LABEL)
-    bubbles.add_button(command="/список", label=strings.LIST_TASKS_LABEL)
-
-    return OutgoingMessage(
-        bot_id=message.bot.id, chat_id=message.chat.id, body=body, bubbles=bubbles
-    )
 
 collector = HandlerCollector()
 file_storage = FileStorage(Path(constants.FILE_STORAGE_PATH))
