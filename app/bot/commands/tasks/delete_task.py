@@ -7,6 +7,7 @@ from app.bot.middlewares.db_session import db_session_middleware
 from app.db.attachment.repo import AttachmentRepo
 from app.db.task.repo import TaskRepo
 from app.resources import strings
+from app.services.answers.status import get_status_message
 from app.services.file_storage import FileStorage
 
 
@@ -57,4 +58,4 @@ async def delete_task(message: IncomingMessage, bot: Bot) -> None:
         bubbles=BubbleMarkup(),
     )
 
-    await bot.send(message=build_outgoing_message(message))
+    await bot.send(message=get_status_message(message))
