@@ -30,6 +30,19 @@ class ChangeTaskDecriptionState(Enum):
     WAITING_NEW_DESCRIPTION = auto()
 
 
+def build_to_edit_message(
+    message: OutgoingMessage, 
+    sync_id: UUID,
+    outgoing_attachment: OutgoingAttachment
+) -> EditMessage:
+    return EditMessage(
+        bot_id=message.bot_id,
+        sync_id=sync_id,
+        body="",
+        file=outgoing_attachment
+    )
+
+
 def build_expanded_task_messages(
     message: IncomingMessage, 
     task: Task,
@@ -67,8 +80,8 @@ def build_expanded_task_messages(
         attachment_message = OutgoingMessage(
             bot_id=message.bot.id,
             chat_id=message.chat.id,
-            body="",
-            file=outgoing_attachment,
+            body="Подождите, файл отправляется...",
+            # file=outgoing_attachment,
         )
         messages.append(attachment_message)
 
@@ -306,8 +319,15 @@ async def expand_task(message: IncomingMessage, bot: Bot) -> None:
         outgoing_attachment,
     )
 
-    for message in messages:
-        await bot.send(message=message)
+    sync_ids = [await bot.send(message=message) for message in messages]
+
+    if len(sync_ids) > 1:
+        await bot.edit(message=build_to_edit_message(
+            message=messages[-1],
+            sync_id=sync_ids[-1],
+            outgoing_attachment=outgoing_attachment
+        ))
+
 
 
 @collector.command("/изменить", visible=False)
