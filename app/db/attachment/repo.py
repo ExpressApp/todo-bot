@@ -26,7 +26,7 @@ class AttachmentRepo:
         return self._to_domain(attachment_in_db)
 
     async def remove_attachment(self, attachment_id: int) -> None:
-        pass
+        await self._crud.delete(pkey_val=attachment_id)
 
     def _to_domain(self, attachment_in_db: AttachmentModel) -> Attachment:
         return Attachment(

@@ -39,7 +39,7 @@ class TaskRepo:
         return self._to_domain(task_in_db)
 
     async def delete_task(self, task_id: int) -> None:
-        pass
+        await self._crud.delete(pkey_val=task_id)
 
     async def change_task_description(self, task_id: int, description: str) -> Task:
         await self._crud.update(
