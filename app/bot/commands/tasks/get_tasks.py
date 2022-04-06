@@ -1,7 +1,7 @@
 from enum import Enum, auto
 from math import ceil
 from pathlib import Path
-from typing import List, Union
+from typing import List
 from uuid import UUID
 
 from botx import (
@@ -29,6 +29,35 @@ class ChangeTaskDecriptionState(Enum):
     WAITING_NEW_DESCRIPTION = auto()
 
 
+def build_main_task_messages(
+    message: IncomingMessage,
+    task: Task,
+    has_attachment: bool,
+) -> OutgoingMessage:
+    colleague_id = task.mentioned_colleague_id
+    contact = Mention.contact(colleague_id) if colleague_id else "Без контакта"
+
+    message = OutgoingMessage(
+        bot_id=message.bot.id,
+        chat_id=message.chat.id,
+        body=f"**{task.title}**\n\n{task.description}\n\n**Контакт:** {contact}",
+    )
+
+    if not has_attachment:
+        message.bubbles = build_task_control_bubbles(task.id)
+
+    return message
+
+
+def build_file_attachment_message(message: IncomingMessage) -> OutgoingMessage:
+    return OutgoingMessage(
+        bot_id=message.bot.id,
+        chat_id=message.chat.id,
+        body="Подождите, файл отправляется...",
+        bubbles=build_task_control_bubbles(message.data["task_id"]),
+    )
+
+
 def build_file_update_message(
     message: OutgoingMessage, sync_id: UUID, outgoing_attachment: OutgoingAttachment
 ) -> EditMessage:
@@ -37,50 +66,24 @@ def build_file_update_message(
     )
 
 
-def build_expanded_task_messages(
-    message: IncomingMessage,
-    task: Task,
-    outgoing_attachment: Union[OutgoingAttachment, None],
-) -> List[OutgoingMessage]:
-    messages = []
-
+def build_task_control_bubbles(task_id: int) -> BubbleMarkup:
     bubbles = BubbleMarkup()
     bubbles.add_button(
         "/изменить",
         "Изменить описание",
-        {"task_id": task.id},
+        {"task_id": task_id},
     )
     bubbles.add_button(
         "/delete-task",
         "Удалить",
-        {"task_id": task.id},
+        {"task_id": task_id},
     )
     bubbles.add_button(
         "/список",
         "К списку задач",
     )
 
-    colleague_id = task.mentioned_colleague_id
-    contact = Mention.contact(colleague_id) if colleague_id else "Без контакта"
-
-    main_message = OutgoingMessage(
-        bot_id=message.bot.id,
-        chat_id=message.chat.id,
-        body=f"**{task.title}**\n\n{task.description}\n\n**Контакт:** {contact}",
-    )
-    messages.append(main_message)
-
-    if outgoing_attachment:
-        attachment_message = OutgoingMessage(
-            bot_id=message.bot.id,
-            chat_id=message.chat.id,
-            body="Подождите, файл отправляется...",
-        )
-        messages.append(attachment_message)
-
-    messages[-1].bubbles = bubbles
-
-    return messages
+    return bubbles
 
 
 def build_success_message(message: IncomingMessage) -> OutgoingMessage:
@@ -296,28 +299,21 @@ async def expand_task(message: IncomingMessage, bot: Bot) -> None:
     task_repo = TaskRepo(message.state.db_session)
 
     task = await task_repo.get_task(message.data["task_id"])
-    outgoing_attachment = None
+    has_attachment = bool(task.attachment)
 
-    if task.attachment:
+    await bot.send(message=build_main_task_messages(message, task, has_attachment))
+
+    if has_attachment:
         async with file_storage.file(task.attachment.file_storage_id) as file:
             outgoing_attachment = await OutgoingAttachment.from_async_buffer(
                 file, task.attachment.filename
             )
 
-    messages = build_expanded_task_messages(
-        message,
-        task,
-        outgoing_attachment,
-    )
-
-    sync_ids = [await bot.send(message=message) for message in messages]
-
-    if outgoing_attachment:
+        outgoing_to_edit_message = build_file_attachment_message(message)
+        sync_id = await bot.send(message=outgoing_to_edit_message)
         await bot.edit(
             message=build_file_update_message(
-                message=messages[-1],
-                sync_id=sync_ids[-1],
-                outgoing_attachment=outgoing_attachment,
+                outgoing_to_edit_message, sync_id, outgoing_attachment
             )
         )
 
