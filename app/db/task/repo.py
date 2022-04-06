@@ -46,6 +46,7 @@ class TaskRepo:
 
     def _to_domain(self, task_in_db: TaskModel) -> Task:
         attachment = None
+        
         if task_in_db.attachment:
             attachment = Attachment(
                 id=task_in_db.attachment.id,
@@ -53,6 +54,7 @@ class TaskRepo:
                 filename=task_in_db.attachment.filename,
                 task_id=task_in_db.id,
             )
+
         return Task(
             id=task_in_db.id,
             user_huid=task_in_db.user_huid,
