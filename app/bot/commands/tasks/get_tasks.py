@@ -29,7 +29,7 @@ class ChangeTaskDecriptionState(Enum):
     WAITING_NEW_DESCRIPTION = auto()
 
 
-def build_to_edit_message(
+def build_file_update_message(
     message: OutgoingMessage, sync_id: UUID, outgoing_attachment: OutgoingAttachment
 ) -> EditMessage:
     return EditMessage(
@@ -314,7 +314,7 @@ async def expand_task(message: IncomingMessage, bot: Bot) -> None:
 
     if outgoing_attachment:
         await bot.edit(
-            message=build_to_edit_message(
+            message=build_file_update_message(
                 message=messages[-1],
                 sync_id=sync_ids[-1],
                 outgoing_attachment=outgoing_attachment,
