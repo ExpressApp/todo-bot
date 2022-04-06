@@ -11,11 +11,12 @@ class AttachmentRepo:
     async def create_attachment(
         self, attachment_in_creation: AttachmentInCreation
     ) -> Attachment:
-        file_storage_id = attachment_in_creation.file_storage_id
-        filename = attachment_in_creation.filename
-
         row = await self._crud.create(
-            model_data={"file_storage_id": file_storage_id, "filename": filename},
+            model_data={
+                "file_storage_id": attachment_in_creation.file_storage_id, 
+                "filename": attachment_in_creation.filename,
+                "task_id": attachment_in_creation.task_id,
+            },
         )
         attachment_in_db = await self._crud.get(pkey_val=row.id)
 
@@ -33,4 +34,5 @@ class AttachmentRepo:
             id=attachment_in_db.id,
             file_storage_id=attachment_in_db.file_storage_id,
             filename=attachment_in_db.filename,
+            task_id=attachment_in_db.task_id
         )
