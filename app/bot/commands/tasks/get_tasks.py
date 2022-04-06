@@ -20,7 +20,6 @@ from pydantic import parse_obj_as
 
 from app.bot import constants
 from app.bot.middlewares.db_session import db_session_middleware
-from app.db.attachment.repo import AttachmentRepo
 from app.db.task.repo import TaskRepo
 from app.schemas.tasks import Task
 from app.services.file_storage import FileStorage
@@ -301,15 +300,16 @@ async def get_tasks(message: IncomingMessage, bot: Bot) -> None:
 async def expand_task(message: IncomingMessage, bot: Bot) -> None:
     assert message.source_sync_id
 
-    attachment_repo = AttachmentRepo(message.state.db_session)
     task_repo = TaskRepo(message.state.db_session)
     
     task = await task_repo.get_task(message.data["task_id"])
     outgoing_attachment = None
+    
     if task.attachment:
-        attachment = await attachment_repo.get_attachment(task.attachment.id)
-        async with file_storage.file(attachment.file_storage_id) as file:
-            outgoing_attachment = await OutgoingAttachment.from_async_buffer(file, attachment.filename)
+        async with file_storage.file(task.attachment.file_storage_id) as file:
+            outgoing_attachment = await OutgoingAttachment.from_async_buffer(
+                file, task.attachment.filename
+            )
 
     messages = build_expanded_task_messages(
         message,
@@ -319,13 +319,14 @@ async def expand_task(message: IncomingMessage, bot: Bot) -> None:
 
     sync_ids = [await bot.send(message=message) for message in messages]
 
-    if len(sync_ids) > 1:
-        await bot.edit(message=build_to_edit_message(
-            message=messages[-1],
-            sync_id=sync_ids[-1],
-            outgoing_attachment=outgoing_attachment
-        ))
-
+    if outgoing_attachment:
+        await bot.edit(
+            message=build_to_edit_message(
+                message=messages[-1],
+                sync_id=sync_ids[-1],
+                outgoing_attachment=outgoing_attachment
+            )
+        )
 
 
 @collector.command("/изменить", visible=False)
