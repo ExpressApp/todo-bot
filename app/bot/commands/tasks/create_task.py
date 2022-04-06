@@ -119,8 +119,6 @@ async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) ->
             file_storage_id = await file_storage.save(file)
             filename = message.file.filename
 
-            task.attachment_id = file_storage_id
-
             attachment.file_storage_id = file_storage_id
             attachment.filename = filename
 
