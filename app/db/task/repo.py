@@ -4,6 +4,7 @@ from uuid import UUID
 from app.db.crud import CRUD
 from app.db.sqlalchemy import AsyncSession
 from app.db.task.models import TaskModel
+from app.schemas.attachments import Attachment
 from app.schemas.tasks import Task, TaskInCreation
 
 
@@ -17,7 +18,6 @@ class TaskRepo:
             "title": task_in_creation.title,
             "description": task_in_creation.description,
             "mentioned_colleague_id": task_in_creation.mentioned_colleague_id,
-            "attachment_id": task_in_creation.attachment_id,
         }
         row = await self._crud.create(model_data=model_data)
 
@@ -33,11 +33,10 @@ class TaskRepo:
 
         return [self._to_domain(task) for task in tasks_in_db]
 
-
     async def get_task(self, task_id: int) -> Task:
         task_in_db = await self._crud.get(pkey_val=task_id)
         return self._to_domain(task_in_db)
-
+    
     async def delete_task(self, task_id: int) -> None:
         await self._crud.delete(pkey_val=task_id)
 
@@ -48,11 +47,19 @@ class TaskRepo:
         )
 
     def _to_domain(self, task_in_db: TaskModel) -> Task:
+        attachment = None
+        if task_in_db.attachment:
+            attachment = Attachment(
+                id=task_in_db.attachment.id,
+                file_storage_id=task_in_db.attachment.file_storage_id,
+                filename=task_in_db.attachment.filename,
+                task_id=task_in_db.id
+            )
         return Task(
             id=task_in_db.id,
             user_huid=task_in_db.user_huid,
             title=task_in_db.title,
             description=task_in_db.description,
             mentioned_colleague_id=task_in_db.mentioned_colleague_id,
-            attachment_id=task_in_db.attachment_id,
+            attachment=attachment
         )

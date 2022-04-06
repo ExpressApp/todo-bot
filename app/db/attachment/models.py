@@ -3,7 +3,7 @@ from uuid import UUID
 
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.dialects import postgresql
-from sqlalchemy.orm import backref, relationship
+from sqlalchemy.orm import relationship
 
 from app.db.sqlalchemy import Base
 
@@ -20,5 +20,6 @@ class AttachmentModel(Base):
     )
 
     task = relationship(
-        "TaskModel", backref=backref("attachment", uselist=False, lazy="selectin")
+        "TaskModel",
+        back_populates="attachment",
     )

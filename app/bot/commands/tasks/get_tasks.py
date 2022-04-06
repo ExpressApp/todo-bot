@@ -81,7 +81,6 @@ def build_expanded_task_messages(
             bot_id=message.bot.id,
             chat_id=message.chat.id,
             body="Подождите, файл отправляется...",
-            # file=outgoing_attachment,
         )
         messages.append(attachment_message)
 
@@ -307,9 +306,8 @@ async def expand_task(message: IncomingMessage, bot: Bot) -> None:
     
     task = await task_repo.get_task(message.data["task_id"])
     outgoing_attachment = None
-    if task.attachment_id:
-        attachment = await attachment_repo.get_attachment(task.attachment_id)
-
+    if task.attachment:
+        attachment = await attachment_repo.get_attachment(task.attachment.id)
         async with file_storage.file(attachment.file_storage_id) as file:
             outgoing_attachment = await OutgoingAttachment.from_async_buffer(file, attachment.filename)
 

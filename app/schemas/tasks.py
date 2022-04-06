@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from typing import Optional
 from uuid import UUID
 
+from app.schemas.attachments import Attachment
+
 
 @dataclass
 class Task:
@@ -10,6 +12,7 @@ class Task:
     title: str
     description: str
     mentioned_colleague_id: Optional[UUID]
+    attachment: Optional[Attachment] = None
 
 
 @dataclass
