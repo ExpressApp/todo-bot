@@ -1,7 +1,7 @@
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.dialects import postgresql
 
 from app.db.sqlalchemy import Base
@@ -16,7 +16,4 @@ class TaskModel(Base):
     description: str = Column(String)
     mentioned_colleague_id: Optional[UUID] = Column(
         postgresql.UUID(as_uuid=True), nullable=True
-    )
-    attachment_id: Optional[int] = Column(
-        Integer, ForeignKey("attachments.id"), nullable=True, unique=True
     )

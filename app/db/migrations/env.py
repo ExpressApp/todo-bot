@@ -6,7 +6,6 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 # Import models to make them visible by alembic
-import app.db.attachment.models
 
 # init config
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[3]))
@@ -16,6 +15,8 @@ from app.settings import settings  # isort:skip
 from app.db.sqlalchemy import Base, make_url_sync  # isort:skip
 
 import app.db.record.models  # isort:skip
+import app.db.attachment.models
+import app.db.task.models
 
 postgres_dsn = make_url_sync(settings.POSTGRES_DSN)
 context_config = context.config
