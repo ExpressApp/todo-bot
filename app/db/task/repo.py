@@ -27,8 +27,7 @@ class TaskRepo:
 
     async def get_user_tasks(self, user_huid: UUID) -> List[Task]:
         tasks_in_db = await self._crud.get_by_field_id_asc(
-            field="user_huid",
-            field_value=user_huid
+            field="user_huid", field_value=user_huid
         )
 
         return [self._to_domain(task) for task in tasks_in_db]
@@ -36,14 +35,13 @@ class TaskRepo:
     async def get_task(self, task_id: int) -> Task:
         task_in_db = await self._crud.get(pkey_val=task_id)
         return self._to_domain(task_in_db)
-    
+
     async def delete_task(self, task_id: int) -> None:
         await self._crud.delete(pkey_val=task_id)
 
     async def change_task_description(self, task_id: int, description: str) -> Task:
         await self._crud.update(
-            pkey_val=task_id,
-            model_data={"description": description}
+            pkey_val=task_id, model_data={"description": description}
         )
 
     def _to_domain(self, task_in_db: TaskModel) -> Task:
@@ -53,7 +51,7 @@ class TaskRepo:
                 id=task_in_db.attachment.id,
                 file_storage_id=task_in_db.attachment.file_storage_id,
                 filename=task_in_db.attachment.filename,
-                task_id=task_in_db.id
+                task_id=task_in_db.id,
             )
         return Task(
             id=task_in_db.id,
@@ -61,5 +59,5 @@ class TaskRepo:
             title=task_in_db.title,
             description=task_in_db.description,
             mentioned_colleague_id=task_in_db.mentioned_colleague_id,
-            attachment=attachment
+            attachment=attachment,
         )

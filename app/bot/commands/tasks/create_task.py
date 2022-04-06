@@ -149,7 +149,7 @@ async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> No
 
         await message.state.fsm.drop_state()
         await bot.send(message=get_status_message(message, strings.SUCCESS_TITLE))
-    
+
     elif message.body == TaskApproveCommands.NO:
         await message.state.fsm.change_state(CreateTaskStates.WAITING_TASK_TITLE)
         if attachment.file_storage_id:
@@ -157,7 +157,7 @@ async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> No
         await bot.answer_message(
             body="Введите название задачи:", keyboard=get_cancel_keyboard_button()
         )
-    
+
     else:
         await bot.send(
             message=get_task_approve_message(

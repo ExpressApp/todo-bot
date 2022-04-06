@@ -13,7 +13,7 @@ class AttachmentRepo:
     ) -> Attachment:
         row = await self._crud.create(
             model_data={
-                "file_storage_id": attachment_in_creation.file_storage_id, 
+                "file_storage_id": attachment_in_creation.file_storage_id,
                 "filename": attachment_in_creation.filename,
                 "task_id": attachment_in_creation.task_id,
             },
@@ -34,5 +34,5 @@ class AttachmentRepo:
             id=attachment_in_db.id,
             file_storage_id=attachment_in_db.file_storage_id,
             filename=attachment_in_db.filename,
-            task_id=attachment_in_db.task_id
+            task_id=attachment_in_db.task_id,
         )

@@ -30,20 +30,15 @@ class ChangeTaskDecriptionState(Enum):
 
 
 def build_to_edit_message(
-    message: OutgoingMessage, 
-    sync_id: UUID,
-    outgoing_attachment: OutgoingAttachment
+    message: OutgoingMessage, sync_id: UUID, outgoing_attachment: OutgoingAttachment
 ) -> EditMessage:
     return EditMessage(
-        bot_id=message.bot_id,
-        sync_id=sync_id,
-        body="",
-        file=outgoing_attachment
+        bot_id=message.bot_id, sync_id=sync_id, body="", file=outgoing_attachment
     )
 
 
 def build_expanded_task_messages(
-    message: IncomingMessage, 
+    message: IncomingMessage,
     task: Task,
     outgoing_attachment: Union[OutgoingAttachment, None],
 ) -> List[OutgoingMessage]:
@@ -71,10 +66,10 @@ def build_expanded_task_messages(
     main_message = OutgoingMessage(
         bot_id=message.bot.id,
         chat_id=message.chat.id,
-        body=f"**{task.title}**\n\n{task.description}\n\n**Контакт:** {contact}"
+        body=f"**{task.title}**\n\n{task.description}\n\n**Контакт:** {contact}",
     )
     messages.append(main_message)
-    
+
     if outgoing_attachment:
         attachment_message = OutgoingMessage(
             bot_id=message.bot.id,
@@ -90,20 +85,17 @@ def build_expanded_task_messages(
 
 def build_success_message(message: IncomingMessage) -> OutgoingMessage:
     bubbles = BubbleMarkup()
-    bubbles.add_button(
-        command="/список",
-        label="Вернуться к списку задач"
-    )
+    bubbles.add_button(command="/список", label="Вернуться к списку задач")
     outgoing_message = OutgoingMessage(
         bot_id=message.bot.id,
         chat_id=message.chat.id,
         body="Описание задачи изменено.",
-        bubbles=bubbles
+        bubbles=bubbles,
     )
-    
+
     return outgoing_message
 
-    
+
 collector = HandlerCollector()
 fsm = FSMCollector(ChangeTaskDecriptionState)
 file_storage = FileStorage(Path(constants.FILE_STORAGE_PATH))
@@ -116,7 +108,7 @@ class ListTasksWidget:
         self._sync_ids = parse_obj_as(List[UUID], message.metadata.get("sync_ids", []))
         self._message = message
         self._tasks = parse_obj_as(List[Task], message.metadata.get("tasks", []))
-        
+
         self._current_task_index = message.data.get("current_task_index", 0)
         self._current_page = message.data.get("current_page", 0)
 
@@ -139,10 +131,7 @@ class ListTasksWidget:
 
         edit_messages = [
             self._outgoing_to_edit_message(message, sync_id)
-            for message, sync_id in zip(
-                messages + [last_message],
-                sync_ids
-            )
+            for message, sync_id in zip(messages + [last_message], sync_ids)
         ]
 
         for message in edit_messages:
@@ -160,15 +149,17 @@ class ListTasksWidget:
         messages = []
 
         for idx in range(
-            self._current_task_index, 
-            self._current_task_index + constants.TASKS_LIST_PAGE_SIZE
+            self._current_task_index,
+            self._current_task_index + constants.TASKS_LIST_PAGE_SIZE,
         ):
             message = self._get_task_message(idx)
             messages.append(message)
 
         return messages
 
-    def _prepare_last_message(self, last_message: OutgoingMessage, sync_ids: List[UUID]) -> OutgoingMessage:
+    def _prepare_last_message(
+        self, last_message: OutgoingMessage, sync_ids: List[UUID]
+    ) -> OutgoingMessage:
         if last_message.bubbles:
             last_message.bubbles.add_row(self._get_control_buttons())
         else:
@@ -176,9 +167,8 @@ class ListTasksWidget:
             bubbles.add_row(self._get_control_buttons())
             last_message.bubbles = bubbles
         last_message.metadata = {"tasks": self._tasks, "sync_ids": sync_ids}
-        
-        return last_message
 
+        return last_message
 
     def _get_control_buttons(self) -> List[Button]:
         buttons = []
@@ -193,14 +183,18 @@ class ListTasksWidget:
                         f"-{self._current_task_index}]"
                     ),
                     data={
-                        "current_task_index": self._current_task_index - constants.TASKS_LIST_PAGE_SIZE,
-                        "current_page": self._current_page - 1
+                        "current_task_index": self._current_task_index
+                        - constants.TASKS_LIST_PAGE_SIZE,
+                        "current_page": self._current_page - 1,
                     },
                 )
             )
 
         # if self._current_task_index < len(self._tasks) - 1:
-        if self._current_page < ceil(len(self._tasks) / constants.TASKS_LIST_PAGE_SIZE) - 1:
+        if (
+            self._current_page
+            < ceil(len(self._tasks) / constants.TASKS_LIST_PAGE_SIZE) - 1
+        ):
             buttons.append(
                 Button(
                     command="/список",
@@ -209,8 +203,9 @@ class ListTasksWidget:
                         f"-{self._current_task_index + constants.TASKS_LIST_PAGE_SIZE + 2}] ➡️"
                     ),
                     data={
-                        "current_task_index": self._current_task_index + constants.TASKS_LIST_PAGE_SIZE,
-                        "current_page": self._current_page + 1
+                        "current_task_index": self._current_task_index
+                        + constants.TASKS_LIST_PAGE_SIZE,
+                        "current_page": self._current_page + 1,
                     },
                 )
             )
@@ -239,7 +234,7 @@ class ListTasksWidget:
         )
 
         if len(task.description) > constants.MAX_PREVIEW_TEXT_LEN:
-            task_text = task.description[:constants.MAX_PREVIEW_TEXT_LEN]
+            task_text = task.description[: constants.MAX_PREVIEW_TEXT_LEN]
         else:
             task_text = task.description
 
@@ -250,7 +245,7 @@ class ListTasksWidget:
             bot_id=self._message.bot.id,
             chat_id=self._message.chat.id,
             body=f"**{task.title}**\n\n{task_text}\n\n**Контакт:** {contact}",
-            bubbles=bubbles
+            bubbles=bubbles,
         )
 
     def _outgoing_to_edit_message(
@@ -278,14 +273,12 @@ async def get_tasks(message: IncomingMessage, bot: Bot) -> None:
     if not widget.is_updating:
         task_repo = TaskRepo(message.state.db_session)
         tasks = await task_repo.get_user_tasks(message.sender.huid)
-        
+
         if not tasks:
             await bot.answer_message("У вас нет задач")
             return
-        
-        await bot.answer_message(
-            body=f"**Задач в списке**: {len(tasks)}"
-        )
+
+        await bot.answer_message(body=f"**Задач в списке**: {len(tasks)}")
 
         widget.set_tasks(tasks)
 
@@ -301,10 +294,10 @@ async def expand_task(message: IncomingMessage, bot: Bot) -> None:
     assert message.source_sync_id
 
     task_repo = TaskRepo(message.state.db_session)
-    
+
     task = await task_repo.get_task(message.data["task_id"])
     outgoing_attachment = None
-    
+
     if task.attachment:
         async with file_storage.file(task.attachment.file_storage_id) as file:
             outgoing_attachment = await OutgoingAttachment.from_async_buffer(
@@ -324,7 +317,7 @@ async def expand_task(message: IncomingMessage, bot: Bot) -> None:
             message=build_to_edit_message(
                 message=messages[-1],
                 sync_id=sync_ids[-1],
-                outgoing_attachment=outgoing_attachment
+                outgoing_attachment=outgoing_attachment,
             )
         )
 
@@ -334,16 +327,15 @@ async def delete_task(message: IncomingMessage, bot: Bot) -> None:
     task_id = message.data["task_id"]
 
     await message.state.fsm.change_state(
-        ChangeTaskDecriptionState.WAITING_NEW_DESCRIPTION,
-        task_id = task_id
+        ChangeTaskDecriptionState.WAITING_NEW_DESCRIPTION, task_id=task_id
     )
-    
+
     await bot.answer_message(body="Укажите новое описание задачи:")
 
- 
+
 @fsm.on(
     ChangeTaskDecriptionState.WAITING_NEW_DESCRIPTION,
-    middlewares=[db_session_middleware]
+    middlewares=[db_session_middleware],
 )
 async def waiting_new_description_handler(message: IncomingMessage, bot: Bot) -> None:
     new_description = message.body
@@ -351,7 +343,7 @@ async def waiting_new_description_handler(message: IncomingMessage, bot: Bot) ->
 
     db_session = message.state.db_session
     task_repo = TaskRepo(db_session)
-    
+
     await task_repo.change_task_description(task_id, new_description)
     await db_session.commit()
 

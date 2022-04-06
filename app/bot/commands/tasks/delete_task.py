@@ -8,7 +8,6 @@ from app.db.task.repo import TaskRepo
 from app.services.answers.status import get_status_message
 from app.services.file_storage import FileStorage
 
-
 collector = HandlerCollector()
 file_storage = FileStorage(Path(constants.FILE_STORAGE_PATH))
 
@@ -32,7 +31,7 @@ async def delete_task(message: IncomingMessage, bot: Bot) -> None:
 
     if task.attachment:
         await file_storage.remove(task.attachment.file_storage_id)
-    
+
     await db_session.commit()
 
     await bot.edit_message(
