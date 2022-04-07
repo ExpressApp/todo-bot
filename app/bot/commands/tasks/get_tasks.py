@@ -21,6 +21,7 @@ from pydantic import parse_obj_as
 from app.bot import constants
 from app.bot.middlewares.db_session import db_session_middleware
 from app.db.task.repo import TaskRepo
+from app.resources import strings
 from app.schemas.tasks import Task
 from app.services.file_storage import FileStorage
 
@@ -181,8 +182,9 @@ class ListTasksWidget:
                 Button(
                     command="/список",
                     label=(
-                        f"⬅️ Назад к [{self._current_task_index - constants.TASKS_LIST_PAGE_SIZE + 1}"
-                        f"-{self._current_task_index}]"
+                        strings.BACK_LABEL.format(
+                            cur_task_index=self._current_task_index
+                        )
                     ),
                     data={
                         "current_task_index": (
@@ -198,8 +200,9 @@ class ListTasksWidget:
                 Button(
                     command="/список",
                     label=(
-                        f"Вперед к [{self._current_task_index + constants.TASKS_LIST_PAGE_SIZE + 1}"
-                        f"-{self._current_task_index + constants.TASKS_LIST_PAGE_SIZE + 2}] ➡️"
+                        strings.FORWARD_LABEL.format(
+                            cur_task_index=self._current_task_index
+                        )
                     ),
                     data={
                         "current_task_index": (

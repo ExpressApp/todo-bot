@@ -39,12 +39,14 @@ lookup = TemplateFormatterLookup(
 BOT_PROJECT_NAME = "todo-bot"
 BOT_DISPLAY_NAME = "ToDo bot"
 
+BACK_LABEL = lookup.get_template("back.txt.mako")
 BEFORE_APPROVE = "Вам необходимо проверить и подтвердить правильность ввода."
 CANCEL_COMMAND = "CANCEL"
 CHAT_CREATED_TEMPLATE = lookup.get_template("chat_created.txt.mako")
 CREATE_TASK_LABEL = "Создать задачу"
 FILE_NOT_DESCRIPTION = "Чтобы указать **описание** задачи, введите его **текстом**"
 FILE_NOT_TITLE = "Чтобы указать **название** задачи, введите его **текстом**"
+FORWARD_LABEL = lookup.get_template("forward.txt.mako")
 HELP_COMMAND_MESSAGE_TEMPLATE = lookup.get_template("help.txt.mako")
 HELP_COMMAND_DESCRIPTION = "Показать список команд"
 HELP_LABEL = "/help"
