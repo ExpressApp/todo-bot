@@ -1,3 +1,4 @@
+"""Handler for task deletion."""
 from pathlib import Path
 
 from botx import Bot, BubbleMarkup, HandlerCollector, IncomingMessage
@@ -28,7 +29,7 @@ async def delete_task(message: IncomingMessage, bot: Bot) -> None:
     await bot.edit_message(
         bot_id=message.bot.id,
         sync_id=message.source_sync_id,
-        body=f"**Задача успешно удалена.**",
+        body="**Задача успешно удалена.**",
         bubbles=BubbleMarkup(),
     )
 

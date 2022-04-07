@@ -1,3 +1,5 @@
+"""Attachment repo."""
+
 from app.db.attachment.models import AttachmentModel
 from app.db.crud import CRUD
 from app.db.sqlalchemy import AsyncSession

@@ -1,4 +1,4 @@
-"""Middleware for checking if a user wants to cancel task creation"""
+"""Middleware for checking if a user wants to cancel task creation."""
 
 
 from botx import Bot, IncomingMessage, IncomingMessageHandlerFunc

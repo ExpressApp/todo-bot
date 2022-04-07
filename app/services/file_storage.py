@@ -3,17 +3,12 @@
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncIterator, Optional
+from typing import AsyncIterator, Optional, Protocol
 from uuid import UUID, uuid4
 
 import aiofiles
-import aiofiles.os
+from aiofiles import os as aio_os
 from aiofiles.tempfile.temptypes import AsyncSpooledTemporaryFile
-
-try:
-    from typing import Protocol
-except ImportError:
-    from typing_extensions import Protocol  # type: ignore  # noqa: WPS440
 
 
 class AsyncBufferBase(Protocol):
@@ -68,7 +63,7 @@ class FileStorage:
 
         assert file_path.exists(), f"File with uuid {file_uuid} not exists"
 
-        await aiofiles.os.remove(file_path)
+        await aio_os.remove(file_path)
 
     def _get_path_to_file(self, file_uuid: UUID) -> Path:
         return self._storage_path.joinpath(str(file_uuid))

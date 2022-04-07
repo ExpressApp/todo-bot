@@ -39,6 +39,9 @@ lookup = TemplateFormatterLookup(
 BOT_PROJECT_NAME = "todo-bot"
 BOT_DISPLAY_NAME = "ToDo bot"
 
+ASK_CONTACT = (
+    "При необходимости отметьте **одного коллегу**, связанного с задачей, через `@@`:"
+)
 BACK_LABEL = lookup.get_template("back.txt.mako")
 BEFORE_APPROVE = "Вам необходимо проверить и подтвердить правильность ввода."
 CANCEL_COMMAND = "CANCEL"
@@ -54,7 +57,9 @@ HELP_LABEL = "/help"
 INCORRECT_CONTACT = "Вы некорректно отметили коллегу. Пожалуйста, укажите **только одного** пользователя **через @@**"
 LIST_TASKS_LABEL = "Показать список задач"
 SKIP_COMMAND = "SKIP"
+STATUS = lookup.get_template("status.txt.mako")
 TASK_APPROVE = lookup.get_template("task_approve.txt.mako")
+TASKS_NUM = lookup.get_template("tasks_num.txt.mako")
 WITHOUT_FILE = (
     "Вы не прикрепили файл к сообщению. Прикрепите файл или пропустите этот шаг."
 )

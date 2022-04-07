@@ -1,3 +1,5 @@
+"""Keyboard with cancel button builder."""
+
 from botx import KeyboardMarkup
 
 from app.resources.strings import CANCEL_COMMAND

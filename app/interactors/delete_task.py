@@ -1,12 +1,12 @@
-from app.db.sqlalchemy import AsyncSessionFactory
+"""Interactor for task deletion."""
+
+from app.db.sqlalchemy import AsyncSession
 from app.db.task.repo import TaskRepo
 from app.services.file_storage import FileStorage
 
 
 class DeleteTaskInteractor:
-    def __init__(
-        self, db_session: AsyncSessionFactory, file_storage: FileStorage
-    ) -> None:
+    def __init__(self, db_session: AsyncSession, file_storage: FileStorage) -> None:
         self._db_session = db_session
         self._file_storage = file_storage
 

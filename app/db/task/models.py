@@ -1,3 +1,5 @@
+"""Task database model declaration."""
+
 from typing import Optional
 from uuid import UUID
 

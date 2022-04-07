@@ -1,3 +1,5 @@
+"""Task domains."""
+
 from dataclasses import dataclass
 from typing import Optional
 from uuid import UUID
@@ -12,7 +14,7 @@ class Task:
     title: str
     description: str
     mentioned_colleague_id: Optional[UUID]
-    attachment: Optional[Attachment] = None
+    attachment: Optional[Attachment]
 
 
 @dataclass

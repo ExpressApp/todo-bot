@@ -1,3 +1,5 @@
+"""Attachment database model declaration."""
+
 from uuid import UUID
 
 from sqlalchemy import Column, ForeignKey, Integer, String

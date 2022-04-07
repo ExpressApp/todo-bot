@@ -1,3 +1,5 @@
+"""Task repo."""
+
 from typing import List
 from uuid import UUID
 
@@ -39,15 +41,16 @@ class TaskRepo:
     async def delete_task(self, task_id: int) -> None:
         await self._crud.delete(pkey_val=task_id)
 
-    async def change_task_description(self, task_id: int, description: str) -> Task:
+    async def change_task_description(self, task_id: int, description: str) -> None:
         await self._crud.update(
             pkey_val=task_id, model_data={"description": description}
         )
 
     def _to_domain(self, task_in_db: TaskModel) -> Task:
-        attachment = None
 
-        if task_in_db.attachment:
+        if task_in_db.attachment is None:
+            attachment = None
+        else:
             attachment = Attachment(
                 id=task_in_db.attachment.id,
                 file_storage_id=task_in_db.attachment.file_storage_id,

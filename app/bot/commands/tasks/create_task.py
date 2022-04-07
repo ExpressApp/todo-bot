@@ -1,3 +1,5 @@
+"""Handler for task creation."""
+
 from enum import Enum, auto
 from pathlib import Path
 
@@ -11,7 +13,7 @@ from app.bot.middlewares.file_checking import file_checking_middleware
 from app.interactors.create_task import CreateTaskInteractor
 from app.resources import strings
 from app.schemas.attachments import AttachmentInCreation
-from app.schemas.enums import StrEnum
+from app.schemas.enums import TaskApproveCommands
 from app.schemas.tasks import TaskInCreation
 from app.services.answers.approve import get_task_approve_message
 from app.services.answers.status import get_status_message
@@ -26,11 +28,6 @@ class CreateTaskStates(Enum):
     WAITING_TASK_CONTACT = auto()
     WAITING_TASK_ATTACHMENT = auto()
     WAITING_TASK_APPROVE = auto()
-
-
-class TaskApproveCommands(StrEnum):
-    YES = "YES"
-    NO = "NO"
 
 
 collector = HandlerCollector()
@@ -74,7 +71,7 @@ async def waiting_task_text_handler(message: IncomingMessage, bot: Bot) -> None:
     )
 
     await bot.answer_message(
-        body="При необходимости отметьте **одного коллегу**, связанного с задачей, через `@@`:",
+        body=strings.ASK_CONTACT,
         bubbles=get_skip_button(),
         keyboard=get_cancel_keyboard_button(),
     )
@@ -127,9 +124,7 @@ async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) ->
     )
 
     await bot.answer_message(strings.BEFORE_APPROVE)
-    await bot.send(
-        message=get_task_approve_message(message, task, attachment, TaskApproveCommands)
-    )
+    await bot.send(message=get_task_approve_message(message, task, attachment))
 
 
 @fsm.on(
@@ -137,7 +132,6 @@ async def waiting_task_attachment_handler(message: IncomingMessage, bot: Bot) ->
     middlewares=[db_session_middleware, cancel_creation_middleware],
 )
 async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> None:
-    # TODO:
     task = message.state.fsm_storage.task
     attachment = message.state.fsm_storage.attachment
 
@@ -159,11 +153,7 @@ async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> No
         )
 
     else:
-        await bot.send(
-            message=get_task_approve_message(
-                message, task, attachment, TaskApproveCommands
-            )
-        )
+        await bot.send(message=get_task_approve_message(message, task, attachment))
 
 
 @collector.command("/создать", description="Создать новую задачу")

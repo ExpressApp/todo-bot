@@ -1,3 +1,5 @@
+"""Handler for getting a task."""
+
 from enum import Enum, auto
 from math import ceil
 from pathlib import Path
@@ -90,14 +92,12 @@ def build_task_control_bubbles(task_id: int) -> BubbleMarkup:
 def build_success_message(message: IncomingMessage) -> OutgoingMessage:
     bubbles = BubbleMarkup()
     bubbles.add_button(command="/список", label="Вернуться к списку задач")
-    outgoing_message = OutgoingMessage(
+    return OutgoingMessage(
         bot_id=message.bot.id,
         chat_id=message.chat.id,
         body="Описание задачи изменено.",
         bubbles=bubbles,
     )
-
-    return outgoing_message
 
 
 collector = HandlerCollector()
@@ -152,7 +152,7 @@ class ListTasksWidget:
     def _get_messages(self) -> List[OutgoingMessage]:
         messages = []
 
-        for idx in range(
+        for idx in range(  # noqa: WPS352
             self._current_task_index,
             self._current_task_index + constants.TASKS_LIST_PAGE_SIZE,
         ):
@@ -267,7 +267,7 @@ class ListTasksWidget:
     def _can_add_page(self) -> bool:
         return (
             self._current_page
-            < ceil(len(self._tasks) / constants.TASKS_LIST_PAGE_SIZE) - 1
+            < ceil(len(self._tasks) / constants.TASKS_LIST_PAGE_SIZE) - 1  # noqa: W503
         )
 
 
@@ -276,7 +276,7 @@ class ListTasksWidget:
     description="Посмотреть список задач",
     middlewares=[db_session_middleware],
 )
-async def get_tasks(message: IncomingMessage, bot: Bot) -> None:
+async def get_tasks(message: IncomingMessage, bot: Bot) -> None:  # noqa: WPS463
     widget = ListTasksWidget(message)
 
     if not widget.is_updating:
@@ -287,7 +287,7 @@ async def get_tasks(message: IncomingMessage, bot: Bot) -> None:
             await bot.answer_message("У вас нет задач")
             return
 
-        await bot.answer_message(body=f"**Задач в списке**: {len(tasks)}")
+        await bot.answer_message(body=strings.TASKS_NUM.format(num=len(tasks)))
 
         widget.set_tasks(tasks)
 
@@ -305,14 +305,15 @@ async def expand_task(message: IncomingMessage, bot: Bot) -> None:
     task_repo = TaskRepo(message.state.db_session)
 
     task = await task_repo.get_task(message.data["task_id"])
-    has_attachment = bool(task.attachment)
 
-    await bot.send(message=build_main_task_messages(message, task, has_attachment))
+    await bot.send(
+        message=build_main_task_messages(message, task, bool(task.attachment))
+    )
 
-    if has_attachment:
+    if task.attachment:
         outgoing_to_edit_message = build_file_attachment_message(message)
         sync_id = await bot.send(message=outgoing_to_edit_message)
-        
+
         async with file_storage.file(task.attachment.file_storage_id) as file:
             outgoing_attachment = await OutgoingAttachment.from_async_buffer(
                 file, task.attachment.filename
