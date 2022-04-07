@@ -19,10 +19,10 @@ file_storage = FileStorage(Path(constants.FILE_STORAGE_PATH))
 )
 async def delete_task(message: IncomingMessage, bot: Bot) -> None:
     assert message.source_sync_id
+
     interactor = DeleteTaskInteractor(
         db_session=message.state.db_session, file_storage=file_storage
     )
-
     await interactor.execute(message.data["task_id"])
 
     await bot.edit_message(
