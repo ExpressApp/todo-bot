@@ -155,7 +155,7 @@ async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> No
         if attachment.file_storage_id:
             await file_storage.remove(attachment.file_storage_id)
         await bot.answer_message(
-            body="Введите название задачи:", keyboard=get_cancel_keyboard_button()
+            body=strings.INPUT_TASK_TITLE, keyboard=get_cancel_keyboard_button()
         )
 
     else:
@@ -173,5 +173,5 @@ async def create_task_handler(message: IncomingMessage, bot: Bot) -> None:
         task=TaskInCreation(user_huid=message.sender.huid),
     )
     await bot.answer_message(
-        body="Введите название задачи:", keyboard=get_cancel_keyboard_button()
+        body=strings.INPUT_TASK_TITLE, keyboard=get_cancel_keyboard_button()
     )

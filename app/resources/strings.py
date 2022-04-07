@@ -44,6 +44,7 @@ BEFORE_APPROVE = "Вам необходимо проверить и подтве
 CANCEL_COMMAND = "CANCEL"
 CHAT_CREATED_TEMPLATE = lookup.get_template("chat_created.txt.mako")
 CREATE_TASK_LABEL = "Создать задачу"
+INPUT_TASK_TITLE = "Введите название задачи:"
 FILE_NOT_DESCRIPTION = "Чтобы указать **описание** задачи, введите его **текстом**"
 FILE_NOT_TITLE = "Чтобы указать **название** задачи, введите его **текстом**"
 FORWARD_LABEL = lookup.get_template("forward.txt.mako")
