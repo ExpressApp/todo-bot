@@ -176,7 +176,6 @@ class ListTasksWidget:
     def _get_control_buttons(self) -> List[Button]:
         buttons = []
 
-        # if self._current_task_index > 0 and self._current_page > 0:
         if self._current_page > 0:
             buttons.append(
                 Button(
@@ -186,18 +185,15 @@ class ListTasksWidget:
                         f"-{self._current_task_index}]"
                     ),
                     data={
-                        "current_task_index": self._current_task_index
-                        - constants.TASKS_LIST_PAGE_SIZE,
+                        "current_task_index": (
+                            self._current_task_index - constants.TASKS_LIST_PAGE_SIZE
+                        ),
                         "current_page": self._current_page - 1,
                     },
                 )
             )
 
-        # if self._current_task_index < len(self._tasks) - 1:
-        if (
-            self._current_page
-            < ceil(len(self._tasks) / constants.TASKS_LIST_PAGE_SIZE) - 1
-        ):
+        if self._can_add_page():
             buttons.append(
                 Button(
                     command="/список",
@@ -206,8 +202,9 @@ class ListTasksWidget:
                         f"-{self._current_task_index + constants.TASKS_LIST_PAGE_SIZE + 2}] ➡️"
                     ),
                     data={
-                        "current_task_index": self._current_task_index
-                        + constants.TASKS_LIST_PAGE_SIZE,
+                        "current_task_index": (
+                            self._current_task_index + constants.TASKS_LIST_PAGE_SIZE
+                        ),
                         "current_page": self._current_page + 1,
                     },
                 )
@@ -264,6 +261,12 @@ class ListTasksWidget:
             sync_id=sync_id,
         )
 
+    def _can_add_page(self) -> bool:
+        return (
+            self._current_page
+            < ceil(len(self._tasks) / constants.TASKS_LIST_PAGE_SIZE) - 1
+        )
+
 
 @collector.command(
     "/список",
@@ -304,13 +307,14 @@ async def expand_task(message: IncomingMessage, bot: Bot) -> None:
     await bot.send(message=build_main_task_messages(message, task, has_attachment))
 
     if has_attachment:
+        outgoing_to_edit_message = build_file_attachment_message(message)
+        sync_id = await bot.send(message=outgoing_to_edit_message)
+        
         async with file_storage.file(task.attachment.file_storage_id) as file:
             outgoing_attachment = await OutgoingAttachment.from_async_buffer(
                 file, task.attachment.filename
             )
 
-        outgoing_to_edit_message = build_file_attachment_message(message)
-        sync_id = await bot.send(message=outgoing_to_edit_message)
         await bot.edit(
             message=build_file_update_message(
                 outgoing_to_edit_message, sync_id, outgoing_attachment
