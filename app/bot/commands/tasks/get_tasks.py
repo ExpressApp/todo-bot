@@ -182,7 +182,7 @@ class ListTasksWidget:
                 Button(
                     command="/список",
                     label=(
-                        strings.BACK_LABEL.format(
+                        strings.PREV_PAGE_LABEL_TEMPLATE.format(
                             cur_task_index=self._current_task_index
                         )
                     ),
@@ -200,7 +200,7 @@ class ListTasksWidget:
                 Button(
                     command="/список",
                     label=(
-                        strings.FORWARD_LABEL.format(
+                        strings.NEXT_PAGE_LABEL_TEMPLATE.format(
                             cur_task_index=self._current_task_index
                         )
                     ),
@@ -287,7 +287,7 @@ async def get_tasks(message: IncomingMessage, bot: Bot) -> None:  # noqa: WPS463
             await bot.answer_message("У вас нет задач")
             return
 
-        await bot.answer_message(body=strings.TASKS_NUM.format(num=len(tasks)))
+        await bot.answer_message(body=strings.TASKS_NUM_TEMPLATE.format(num=len(tasks)))
 
         widget.set_tasks(tasks)
 

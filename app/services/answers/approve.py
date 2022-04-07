@@ -2,7 +2,7 @@
 
 from botx import BubbleMarkup, IncomingMessage, Mention, OutgoingMessage
 
-from app.resources.strings import TASK_APPROVE
+from app.resources.strings import TASK_APPROVE_TEMPLATE
 from app.schemas.attachments import AttachmentInCreation
 from app.schemas.enums import TaskApproveCommands
 from app.schemas.tasks import TaskInCreation
@@ -20,7 +20,7 @@ def get_task_approve_message(
     if attachment.filename:
         file = attachment.filename
 
-    text = TASK_APPROVE.format(
+    text = TASK_APPROVE_TEMPLATE.format(
         title=task.title, description=task.description, contact=contact, file=file
     )
 

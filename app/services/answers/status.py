@@ -4,13 +4,17 @@ from typing import Optional
 
 from botx import BubbleMarkup, IncomingMessage, OutgoingMessage
 
-from app.resources.strings import CREATE_TASK_LABEL, LIST_TASKS_LABEL, STATUS
+from app.resources.strings import (
+    CREATE_TASK_LABEL,
+    LIST_TASKS_LABEL,
+    TASK_STATUS_TEMPLATE,
+)
 
 
 def get_status_message(
     message: IncomingMessage, title: Optional[str] = None
 ) -> OutgoingMessage:
-    body = STATUS.format(title=title)
+    body = TASK_STATUS_TEMPLATE.format(title=title)
 
     bubbles = BubbleMarkup()
     bubbles.add_button(command="/создать", label=CREATE_TASK_LABEL)

@@ -42,7 +42,6 @@ BOT_DISPLAY_NAME = "ToDo bot"
 ASK_CONTACT = (
     "При необходимости отметьте **одного коллегу**, связанного с задачей, через `@@`:"
 )
-BACK_LABEL = lookup.get_template("back.txt.mako")
 BEFORE_APPROVE = "Вам необходимо проверить и подтвердить правильность ввода."
 CANCEL_COMMAND = "CANCEL"
 CHAT_CREATED_TEMPLATE = lookup.get_template("chat_created.txt.mako")
@@ -50,16 +49,17 @@ CREATE_TASK_LABEL = "Создать задачу"
 INPUT_TASK_TITLE = "Введите название задачи:"
 FILE_NOT_DESCRIPTION = "Чтобы указать **описание** задачи, введите его **текстом**"
 FILE_NOT_TITLE = "Чтобы указать **название** задачи, введите его **текстом**"
-FORWARD_LABEL = lookup.get_template("forward.txt.mako")
 HELP_COMMAND_MESSAGE_TEMPLATE = lookup.get_template("help.txt.mako")
 HELP_COMMAND_DESCRIPTION = "Показать список команд"
 HELP_LABEL = "/help"
 INCORRECT_CONTACT = "Вы некорректно отметили коллегу. Пожалуйста, укажите **только одного** пользователя **через @@**"
 LIST_TASKS_LABEL = "Показать список задач"
+NEXT_PAGE_LABEL_TEMPLATE = lookup.get_template("forward.txt.mako")
+PREV_PAGE_LABEL_TEMPLATE = lookup.get_template("back.txt.mako")
 SKIP_COMMAND = "SKIP"
-STATUS = lookup.get_template("status.txt.mako")
-TASK_APPROVE = lookup.get_template("task_approve.txt.mako")
-TASKS_NUM = lookup.get_template("tasks_num.txt.mako")
+TASK_APPROVE_TEMPLATE = lookup.get_template("task_approve.txt.mako")
+TASK_STATUS_TEMPLATE = lookup.get_template("status.txt.mako")
+TASKS_NUM_TEMPLATE = lookup.get_template("tasks_num.txt.mako")
 WITHOUT_FILE = (
     "Вы не прикрепили файл к сообщению. Прикрепите файл или пропустите этот шаг."
 )
