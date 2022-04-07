@@ -1,5 +1,6 @@
 from botx import BubbleMarkup, IncomingMessage, Mention, OutgoingMessage
 
+from app.resources.strings import TASK_APPROVE
 from app.schemas.attachments import AttachmentInCreation
 from app.schemas.enums import StrEnum
 from app.schemas.tasks import TaskInCreation
@@ -20,13 +21,11 @@ def get_task_approve_message(
     if attachment.filename:
         file = attachment.filename
 
-    text = "\n".join(
-        [
-            f"**Название задачи**: {task.title}",
-            f"**Описание задачи**: {task.description}",
-            f"**Контакт**: {contact}",
-            f"**Вложение**: {file}\n\n",
-        ]
+    text = TASK_APPROVE.format(
+        title=task.title,
+        description=task.description,
+        contact=contact,
+        file=file
     )
 
     bubbles = BubbleMarkup()

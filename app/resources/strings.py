@@ -54,6 +54,7 @@ HELP_LABEL = "/help"
 INCORRECT_CONTACT = "Вы некорректно отметили коллегу. Пожалуйста, укажите **только одного** пользователя **через @@**"
 LIST_TASKS_LABEL = "Показать список задач"
 SKIP_COMMAND = "SKIP"
+TASK_APPROVE = lookup.get_template("task_approve.txt.mako")
 WITHOUT_FILE = (
     "Вы не прикрепили файл к сообщению. Прикрепите файл или пропустите этот шаг."
 )
