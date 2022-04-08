@@ -1,6 +1,6 @@
 from typing import Awaitable, Callable
 
-from botx import Bot, BubbleMarkup, IncomingMessage
+from botx import Bot, BubbleMarkup, Button, IncomingMessage
 from botx.models.commands import BotCommand
 
 
@@ -15,11 +15,7 @@ async def test_default_handler(
     # - Act -
     await execute_bot_command(bot, message)
 
-    # - Assert -
-    bubbles = BubbleMarkup()
-    bubbles.add_button(command="/создать", label="Создать задачу")
-    bubbles.add_button(command="/список", label="Показать список задач")
-    
+    # - Assert -    
     bot.answer_message.assert_awaited_once_with(
         body=(
             "К сожалению, мне не удалось найти информацию.\n\n"
@@ -27,7 +23,12 @@ async def test_default_handler(
             "чтобы контролировать дела, которые нужно сделать за день.\n\n"
             "Для дальнейшей работы нажмите на одну из кнопок ниже:"
         ),
-        bubbles=bubbles,
+        bubbles=BubbleMarkup(
+            [
+                [Button(command="/создать", label="Создать задачу")],
+                [Button(command="/список", label="Показать список задач")]
+            ]
+        ),
     )
 
 
