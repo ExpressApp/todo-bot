@@ -28,8 +28,7 @@ importlib-resources = { version = "^5.4.0", python = "<3.9" }
 zipp = { version = "^3.7.0", python = "<3.9" }
 importlib-metadata = { version = "^4.11.0", python = "<3.9" }
 pybotx-fsm = "^0.3.2"
-# pybotx = "^0.32.2"
-pybotx-smart-logger = "^0.6.2"
+pybotx-smart-logger = {path = "../pybotx-smart-logger", develop = true}
 pybotx-smartapp-rpc = "^0.3.2"
 
 [tool.poetry.dev-dependencies]

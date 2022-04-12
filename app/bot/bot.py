@@ -24,6 +24,6 @@ def get_bot() -> Bot:
             FSMMiddleware(
                 [create_task.fsm, get_tasks.fsm], state_repo_key="redis_repo"
             ),
-            # BotXSmartLoggerMiddleware(debug_enabled_for_message=True).dispatch,
+            BotXSmartLoggerMiddleware(debug_enabled_for_message=True).dispatch,
         ],
     )
