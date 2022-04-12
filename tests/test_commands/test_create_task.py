@@ -2,7 +2,17 @@ import asyncio
 from typing import Awaitable, Callable
 from uuid import uuid4
 
-from botx import AttachmentTypes, Bot, BubbleMarkup, Button, IncomingMessage, KeyboardMarkup, Mention, MentionList, lifespan_wrapper
+from botx import (
+    AttachmentTypes, 
+    Bot, 
+    BubbleMarkup, 
+    Button, 
+    IncomingMessage, 
+    KeyboardMarkup, 
+    Mention, 
+    MentionList, 
+    lifespan_wrapper
+)
 from botx.models.attachments import AttachmentDocument
 from botx.models.commands import BotCommand
 import pytest
@@ -286,4 +296,3 @@ async def test_not_one_contact(
             ]
         ),
     )
-    
