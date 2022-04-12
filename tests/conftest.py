@@ -114,7 +114,6 @@ def incoming_message_factory(
             data={},
             metadata={},
             sender=UserSender(
-                # huid=uuid4(),
                 UUID('2c7f7a5e-f2fd-45c4-b0f1-453ed2f34fad'),
                 ad_login=ad_login,
                 ad_domain=ad_domain,
@@ -135,7 +134,6 @@ def incoming_message_factory(
                 ),
             ),
             chat=Chat(
-                # id=uuid4(),
                 id=UUID('a57aca87-e90b-4623-8bf2-9fb26adbdaaf'),
                 type=ChatTypes.PERSONAL_CHAT,
             ),
