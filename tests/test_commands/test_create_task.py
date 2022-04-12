@@ -31,7 +31,6 @@ async def test_create_task_handler(
 async def test_file_instead_title(
     bot: Bot,
     incoming_message_factory: Callable[..., IncomingMessage],
-    execute_bot_command: Callable[[Bot, BotCommand], Awaitable[None]],
 ) -> None:
     # - Arrange -
     command_message = incoming_message_factory(body="/создать")
@@ -67,7 +66,6 @@ async def test_file_instead_title(
 async def test_task_title_handler(
     bot: Bot,
     incoming_message_factory: Callable[..., IncomingMessage],
-    execute_bot_command: Callable[[Bot, BotCommand], Awaitable[None]],
 ) -> None:
 
     # - Arrange -
