@@ -8,7 +8,7 @@ import pytest
 import respx
 from alembic import config as alembic_config
 from asgi_lifespan import LifespanManager
-from botx import (
+from pybotx import (
     Bot,
     BotAccount,
     Chat,
@@ -18,7 +18,7 @@ from botx import (
     UserSender,
     lifespan_wrapper,
 )
-from botx.models.commands import BotCommand
+from pybotx.models.commands import BotCommand
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.caching.redis_repo import RedisRepo
@@ -41,7 +41,15 @@ async def db_session(bot: Bot) -> AsyncSession:
 
 @pytest.fixture
 async def redis_repo(bot: Bot) -> RedisRepo:
-    return bot.state.redis_repo
+    yield bot.state.redis_repo
+    
+
+@pytest.fixture
+async def fsm_session(bot: Bot, host:str, bot_id: UUID) -> None:
+    yield None
+    await bot.state.redis_repo.delete(
+        f"fsm:{host}:{bot_id}:a57aca87-e90b-4623-8bf2-9fb26adbdaaf:2c7f7a5e-f2fd-45c4-b0f1-453ed2f34fad"
+    )
 
 
 @pytest.hookimpl(trylast=True)
@@ -77,6 +85,7 @@ async def bot(
         mock_authorization(bot_account.host, bot_account.id)
 
     built_bot.answer_message = AsyncMock(return_value=uuid4())
+    built_bot.send = AsyncMock(return_value=uuid4())
 
     async with LifespanManager(fastapi_app):
         yield built_bot
@@ -114,7 +123,7 @@ def incoming_message_factory(
             data={},
             metadata={},
             sender=UserSender(
-                UUID('2c7f7a5e-f2fd-45c4-b0f1-453ed2f34fad'),
+                huid=UUID('2c7f7a5e-f2fd-45c4-b0f1-453ed2f34fad'),
                 ad_login=ad_login,
                 ad_domain=ad_domain,
                 username=None,
