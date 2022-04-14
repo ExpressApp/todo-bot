@@ -13,14 +13,15 @@ from pybotx import (
     lifespan_wrapper
 )
 from pybotx.models.attachments import AttachmentDocument
+from pybotx.models.message.mentions import MentionContact
 import pytest
 
 from app.schemas.enums import TaskApproveCommands
 
 
 @pytest.fixture
-def mentions() -> MentionList:
-    return MentionList([MentionBuilder.contact(uuid4())])
+def contact() -> MentionContact:
+    return MentionBuilder.contact(uuid4())
 
 
 @pytest.fixture
@@ -38,7 +39,7 @@ def incoming_attachment() -> AttachmentDocument:
 async def test_task_creation(
     bot: Bot,
     incoming_message_factory: Callable[..., IncomingMessage],
-    mentions: MentionList,
+    contact: MentionContact,
     incoming_attachment: AttachmentDocument,
     fsm_session: None,
     bot_id: UUID,
@@ -47,7 +48,9 @@ async def test_task_creation(
     start_creating_task_message = incoming_message_factory(body="/создать")
     send_title_message = incoming_message_factory(body="Title")
     send_description_message = incoming_message_factory(body="Description")
-    send_mentions_message = incoming_message_factory(body=str(mentions), mentions=mentions)
+    send_mentions_message = incoming_message_factory(
+        body=str(contact), mentions=MentionList([contact])
+    )
     send_attachment_message = incoming_message_factory(attachment=incoming_attachment)
     send_confirm_message = incoming_message_factory(body=TaskApproveCommands.YES)
 
