@@ -47,11 +47,9 @@ async def redis_repo(bot: Bot) -> RedisRepo:
     
 
 @pytest.fixture
-async def fsm_session(bot: Bot, host:str, bot_id: UUID) -> None:
+async def fsm_session(bot: Bot) -> None:
     yield None
-    await bot.state.redis_repo.delete(
-        f"fsm:{host}:{bot_id}:a57aca87-e90b-4623-8bf2-9fb26adbdaaf:2c7f7a5e-f2fd-45c4-b0f1-453ed2f34fad"
-    )
+    await bot.state.redis_repo.delete("fsm:*")
 
 
 @pytest.hookimpl(trylast=True)
