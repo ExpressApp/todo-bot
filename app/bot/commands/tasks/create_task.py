@@ -3,7 +3,7 @@
 from enum import Enum, auto
 from pathlib import Path
 
-from botx import Bot, HandlerCollector, IncomingMessage
+from pybotx import Bot, HandlerCollector, IncomingMessage
 from pybotx_fsm import FSMCollector
 
 from app.bot import constants

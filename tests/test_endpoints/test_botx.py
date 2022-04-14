@@ -5,7 +5,7 @@ import respx
 from fastapi.testclient import TestClient
 import httpx
 
-from botx import Bot
+from pybotx import Bot
 from app.main import get_application
 
 

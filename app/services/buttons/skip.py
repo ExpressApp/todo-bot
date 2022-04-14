@@ -1,6 +1,6 @@
 """Bubble with skip button builder."""
 
-from botx import BubbleMarkup
+from pybotx import BubbleMarkup
 
 from app.resources.strings import SKIP_COMMAND
 

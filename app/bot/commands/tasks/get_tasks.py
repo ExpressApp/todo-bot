@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List
 from uuid import UUID
 
-from botx import (
+from pybotx import (
     Bot,
     BubbleMarkup,
     Button,

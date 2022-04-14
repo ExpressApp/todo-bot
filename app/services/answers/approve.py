@@ -1,6 +1,6 @@
 """Approve message builder."""
 
-from botx import BubbleMarkup, IncomingMessage, Mention, OutgoingMessage
+from pybotx import BubbleMarkup, IncomingMessage, MentionBuilder, OutgoingMessage
 
 from app.resources.strings import TASK_APPROVE_TEMPLATE
 from app.schemas.attachments import AttachmentInCreation
@@ -14,7 +14,7 @@ def get_task_approve_message(
 ) -> OutgoingMessage:
     contact = "Без контакта"
     if task.mentioned_colleague_id:
-        contact = Mention.contact(huid=task.mentioned_colleague_id)
+        contact = MentionBuilder.contact(task.mentioned_colleague_id)
 
     file = "Без вложения"
     if attachment.filename:

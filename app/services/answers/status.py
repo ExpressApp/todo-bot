@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from botx import BubbleMarkup, IncomingMessage, OutgoingMessage
+from pybotx import BubbleMarkup, IncomingMessage, OutgoingMessage
 
 from app.resources.strings import (
     CREATE_TASK_LABEL,

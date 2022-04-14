@@ -1,6 +1,6 @@
 """Bot dependency for FastAPI."""
 
-from botx import Bot
+from pybotx import Bot
 from fastapi import Depends, Request
 
 

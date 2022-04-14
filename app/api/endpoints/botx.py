@@ -1,8 +1,8 @@
-"""Endpoints for communication with botx."""
+"""Endpoints for communication with pybotx."""
 
 from http import HTTPStatus
 
-from botx import (
+from pybotx import (
     Bot,
     BotXMethodCallbackNotFoundError,
     UnknownBotAccountError,

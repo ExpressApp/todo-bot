@@ -1,7 +1,7 @@
 from typing import Awaitable, Callable
 
-from botx import Bot, BubbleMarkup, Button, IncomingMessage
-from botx.models.commands import BotCommand
+from pybotx import Bot, BubbleMarkup, Button, IncomingMessage
+from pybotx.models.commands import BotCommand
 
 
 async def test_default_handler(

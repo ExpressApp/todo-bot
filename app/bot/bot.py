@@ -1,6 +1,6 @@
 """Configuration for bot instance."""
 
-from botx import Bot
+from pybotx import Bot
 from pybotx_fsm import FSMMiddleware
 from pybotx_smart_logger import BotXSmartLoggerMiddleware
 

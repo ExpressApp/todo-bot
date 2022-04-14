@@ -1,7 +1,7 @@
 """Handler for task deletion."""
 from pathlib import Path
 
-from botx import Bot, BubbleMarkup, HandlerCollector, IncomingMessage
+from pybotx import Bot, BubbleMarkup, HandlerCollector, IncomingMessage
 
 from app.bot import constants
 from app.bot.middlewares.db_session import db_session_middleware
