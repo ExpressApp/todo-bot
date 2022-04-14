@@ -2,8 +2,8 @@
 
 from functools import partial
 
-from pybotx import Bot
 from fastapi import FastAPI
+from pybotx import Bot
 
 from app.api.routers import router
 from app.bot.bot import get_bot
