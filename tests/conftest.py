@@ -14,11 +14,14 @@ from pybotx import (
     Chat,
     ChatTypes,
     IncomingMessage,
+    MentionList,
     UserDevice,
     UserSender,
     lifespan_wrapper,
 )
+from pybotx.models.attachments import AttachmentDocument
 from pybotx.models.commands import BotCommand
+from pybotx.models.message.mentions import MentionContact
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.caching.redis_repo import RedisRepo
@@ -111,6 +114,8 @@ def incoming_message_factory(
         body: str = "",
         ad_login: Optional[str] = None,
         ad_domain: Optional[str] = None,
+        contact: Optional[MentionContact] = None,
+        attachment: Optional[AttachmentDocument] = None,
     ) -> IncomingMessage:
         return IncomingMessage(
             bot=BotAccount(
@@ -146,6 +151,8 @@ def incoming_message_factory(
                 id=UUID('a57aca87-e90b-4623-8bf2-9fb26adbdaaf'),
                 type=ChatTypes.PERSONAL_CHAT,
             ),
+            mentions=MentionList([contact]),
+            file=attachment,
             raw_command=None,
         )
 
