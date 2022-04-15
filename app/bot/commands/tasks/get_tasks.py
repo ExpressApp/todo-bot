@@ -13,7 +13,7 @@ from pybotx import (
     EditMessage,
     HandlerCollector,
     IncomingMessage,
-    Mention,
+    MentionBuilder,
     OutgoingAttachment,
     OutgoingMessage,
 )
@@ -38,7 +38,7 @@ def build_main_task_messages(
     has_attachment: bool,
 ) -> OutgoingMessage:
     colleague_id = task.mentioned_colleague_id
-    contact = Mention.contact(colleague_id) if colleague_id else "Без контакта"
+    contact = MentionBuilder.contact(colleague_id) if colleague_id else "Без контакта"
 
     message = OutgoingMessage(
         bot_id=message.bot.id,
@@ -242,7 +242,9 @@ class ListTasksWidget:
             task_text = task.description
 
         colleague_id = task.mentioned_colleague_id
-        contact = Mention.contact(colleague_id) if colleague_id else "Без контакта"
+        contact = (
+            MentionBuilder.contact(colleague_id) if colleague_id else "Без контакта"
+        )
 
         return OutgoingMessage(
             bot_id=self._message.bot.id,
