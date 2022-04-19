@@ -33,6 +33,17 @@ file_storage = FileStorage(Path(constants.FILE_STORAGE_PATH))
 fsm = FSMCollector(CreateTaskStates)
 
 
+@collector.command("/создать", description="Создать новую задачу")
+async def create_task_handler(message: IncomingMessage, bot: Bot) -> None:
+    await message.state.fsm.change_state(
+        CreateTaskStates.WAITING_TASK_TITLE,
+        task=TaskInCreation(user_huid=message.sender.huid),
+    )
+    await bot.answer_message(
+        body=strings.INPUT_TASK_TITLE, keyboard=get_cancel_keyboard_button()
+    )
+
+
 @fsm.on(CreateTaskStates.WAITING_TASK_TITLE, middlewares=[cancel_creation_middleware])
 async def waiting_task_title_handler(message: IncomingMessage, bot: Bot) -> None:
     if message.file:
@@ -160,14 +171,3 @@ async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> No
 
     else:
         await bot.send(message=get_task_approve_message(message, task, attachment))
-
-
-@collector.command("/создать", description="Создать новую задачу")
-async def create_task_handler(message: IncomingMessage, bot: Bot) -> None:
-    await message.state.fsm.change_state(
-        CreateTaskStates.WAITING_TASK_TITLE,
-        task=TaskInCreation(user_huid=message.sender.huid),
-    )
-    await bot.answer_message(
-        body=strings.INPUT_TASK_TITLE, keyboard=get_cancel_keyboard_button()
-    )
