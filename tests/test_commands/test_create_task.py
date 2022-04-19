@@ -16,8 +16,6 @@ from pybotx.models.attachments import AttachmentDocument
 from pybotx.models.message.mentions import MentionContact
 import pytest
 
-from app.schemas.enums import TaskApproveCommands
-
 
 @pytest.fixture
 def contact() -> MentionContact:
@@ -52,7 +50,7 @@ async def test_task_creation(
         body=str(contact), mentions=MentionList([contact])
     )
     send_attachment_message = incoming_message_factory(attachment=incoming_attachment)
-    send_confirm_message = incoming_message_factory(body=TaskApproveCommands.YES)
+    send_confirm_message = incoming_message_factory(body="YES")
 
     # - Act -
     async with lifespan_wrapper(bot):

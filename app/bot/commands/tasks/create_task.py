@@ -13,7 +13,6 @@ from app.bot.middlewares.file_checking import file_checking_middleware
 from app.interactors.create_task import CreateTaskInteractor
 from app.resources import strings
 from app.schemas.attachments import AttachmentInCreation
-from app.schemas.enums import TaskApproveCommands
 from app.schemas.tasks import TaskInCreation
 from app.services.answers.approve import get_task_approve_message
 from app.services.answers.status import get_status_message
@@ -137,14 +136,14 @@ async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> No
 
     db_session = message.state.db_session
 
-    if message.body == TaskApproveCommands.YES:
+    if message.body == strings.CONFIRM_TASK_COMMAND:
         interactor = CreateTaskInteractor(db_session)
         task = await interactor.execute(task, attachment)
 
         await message.state.fsm.drop_state()
         await bot.send(message=get_status_message(message, strings.SUCCESS_TITLE))
 
-    elif message.body == TaskApproveCommands.NO:
+    elif message.body == strings.CANCEL_TASK_COMMAND:
         await message.state.fsm.change_state(CreateTaskStates.WAITING_TASK_TITLE)
         if attachment.file_storage_id:
             await file_storage.remove(attachment.file_storage_id)

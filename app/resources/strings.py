@@ -44,6 +44,8 @@ ASK_CONTACT = (
 )
 BEFORE_APPROVE = "Вам необходимо проверить и подтвердить правильность ввода."
 CANCEL_COMMAND = "CANCEL"
+CANCEL_TASK_COMMAND = "NO"
+CONFIRM_TASK_COMMAND = "YES"
 CHAT_CREATED_TEMPLATE = lookup.get_template("chat_created.txt.mako")
 CREATE_TASK_LABEL = "Создать задачу"
 INPUT_TASK_TITLE = "Введите название задачи:"
