@@ -7,16 +7,16 @@ from pybotx import Bot, HandlerCollector, IncomingMessage
 from pybotx_fsm import FSMCollector
 
 from app.bot import constants
+from app.bot.answers.approve import get_task_approve_message
+from app.bot.answers.cancel import get_cancel_keyboard_button
+from app.bot.answers.skip import get_skip_button
+from app.bot.answers.status import get_status_message
 from app.bot.middlewares.cancel_creation import cancel_creation_middleware
 from app.bot.middlewares.db_session import db_session_middleware
 from app.interactors.create_task import CreateTaskInteractor
 from app.resources import strings
 from app.schemas.attachments import AttachmentInCreation
 from app.schemas.tasks import TaskInCreation
-from app.services.answers.approve import get_task_approve_message
-from app.services.answers.status import get_status_message
-from app.services.buttons.cancel import get_cancel_keyboard_button
-from app.services.buttons.skip import get_skip_button
 from app.services.file_storage import FileStorage
 
 

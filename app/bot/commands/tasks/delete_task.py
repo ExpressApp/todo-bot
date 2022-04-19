@@ -1,12 +1,13 @@
 """Handler for task deletion."""
+
 from pathlib import Path
 
 from pybotx import Bot, BubbleMarkup, HandlerCollector, IncomingMessage
 
 from app.bot import constants
+from app.bot.answers.status import get_status_message
 from app.bot.middlewares.db_session import db_session_middleware
 from app.interactors.delete_task import DeleteTaskInteractor
-from app.services.answers.status import get_status_message
 from app.services.file_storage import FileStorage
 
 collector = HandlerCollector()

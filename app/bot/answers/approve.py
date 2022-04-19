@@ -2,11 +2,10 @@
 
 from pybotx import BubbleMarkup, IncomingMessage, MentionBuilder, OutgoingMessage
 
-from app.resources.strings import TASK_APPROVE_TEMPLATE
+from app.bot.answers.cancel import get_cancel_keyboard_button
+from app.resources import strings
 from app.schemas.attachments import AttachmentInCreation
-from app.schemas.enums import TaskApproveCommands
 from app.schemas.tasks import TaskInCreation
-from app.services.buttons.cancel import get_cancel_keyboard_button
 
 
 def get_task_approve_message(
@@ -20,13 +19,13 @@ def get_task_approve_message(
     if attachment.filename:
         file = attachment.filename
 
-    text = TASK_APPROVE_TEMPLATE.format(
+    text = strings.TASK_APPROVE_TEMPLATE.format(
         title=task.title, description=task.description, contact=contact, file=file
     )
 
     bubbles = BubbleMarkup()
-    bubbles.add_button(command=TaskApproveCommands.YES, label="Да")
-    bubbles.add_button(command=TaskApproveCommands.NO, label="Нет")
+    bubbles.add_button(command=strings.CONFIRM_TASK_COMMAND, label="Да")
+    bubbles.add_button(command=strings.CANCEL_TASK_COMMAND, label="Нет")
 
     return OutgoingMessage(
         bot_id=message.bot.id,
