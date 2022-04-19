@@ -48,15 +48,15 @@ class TaskRepo:
 
     def _to_domain(self, task_in_db: TaskModel) -> Task:
 
-        if task_in_db.attachment is None:
-            attachment = None
-        else:
+        if task_in_db.attachment:
             attachment = Attachment(
                 id=task_in_db.attachment.id,
                 file_storage_id=task_in_db.attachment.file_storage_id,
                 filename=task_in_db.attachment.filename,
                 task_id=task_in_db.id,
             )
+        else:
+            attachment = None
 
         return Task(
             id=task_in_db.id,
