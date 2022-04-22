@@ -1,89 +1,67 @@
-import uuid
-from typing import List
+from uuid import UUID
 from unittest.mock import AsyncMock
 
 import pytest
-from botx.clients.methods.errors.user_not_found import UserNotFoundError
-from botx.models.messages.sending.credentials import SendingCredentials
-from botx.models.users import UserFromSearch
+from pybotx import Bot, UserFromSearch, UserNotFoundError
 
-from app.services.botx_user_search import UserIsBotError, search_user_on_each_cts
-from app.settings.environments.base import BotAccount
+from app.services.botx_user_search import search_user_on_each_cts, UserIsBotError
 
 
-@pytest.fixture
-def user_huid() -> uuid.UUID:
-    return uuid.uuid4()
+async def test_search_user_on_each_cts_user_is_bot_error_raised(
+    bot: Bot,
+) -> None:
+    # - Arrange -
+    bot_user = UserFromSearch(
+        huid=UUID("86c4814b-feee-4ff0-b04d-4b3226318078"),
+        ad_login=None,
+        ad_domain=None,
+        username="Test Bot",
+        company=None,
+        company_position=None,
+        department=None,
+        emails=[],
+    )
 
+    bot.search_user_by_huid = AsyncMock(return_value=bot_user)
 
-@pytest.fixture
-def bot_from_search(user_huid: uuid.UUID, host: str) -> UserFromSearch:
-    return UserFromSearch(user_huid=user_huid, name="test-bot", emails=[])
-
-
-@pytest.fixture
-def user_from_search(user_huid: uuid.UUID, host: str) -> UserFromSearch:
-    return UserFromSearch(user_huid=user_huid, name="test", emails=[])
-
-
-@pytest.fixture
-async def bot_accounts(host: str, bot_id: uuid.UUID) -> List[BotAccount]:
-    return [BotAccount(host=host, bot_id=bot_id)]
-
-
-@pytest.fixture
-async def bot_mock() -> AsyncMock:
-    return AsyncMock()
-
-
-@pytest.fixture
-async def credentials(host: str, bot_id: uuid.UUID) -> SendingCredentials:
-    return SendingCredentials(host=host, bot_id=bot_id)
-
-
-@pytest.mark.asyncio
-async def test_search_user_on_each_cts_found_user(
-    bot_mock: AsyncMock,
-    user_huid: uuid.UUID,
-    credentials: SendingCredentials,
-    user_from_search: UserFromSearch,
-    host: str,
-    bot_accounts: List[BotAccount],
-):
-    bot_mock.search_user.return_value = user_from_search
-    user, cts_host = await search_user_on_each_cts(bot_mock, user_huid, bot_accounts)
-
-    bot_mock.search_user.assert_awaited_with(credentials, user_huid=user_huid)
-    assert user == user_from_search
-    assert cts_host == host
-
-
-@pytest.mark.asyncio
-async def test_search_user_on_each_cts_found_bot(
-    bot_mock: AsyncMock,
-    user_huid: uuid.UUID,
-    credentials: SendingCredentials,
-    bot_from_search: UserFromSearch,
-    host: str,
-    bot_accounts: List[BotAccount],
-):
-    bot_mock.search_user.return_value = bot_from_search
+    # - Act -
     with pytest.raises(UserIsBotError):
-        await search_user_on_each_cts(bot_mock, user_huid, bot_accounts)
-
-    bot_mock.search_user.assert_awaited_with(credentials, user_huid=user_huid)
+        await search_user_on_each_cts(bot, UUID("86c4814b-feee-4ff0-b04d-4b3226318078"))
 
 
-@pytest.mark.asyncio
-async def test_search_user_on_each_cts_exception(
-    bot_mock: AsyncMock,
-    user_huid: uuid.UUID,
-    credentials: SendingCredentials,
-    bot_accounts: List[BotAccount],
-):
-    bot_mock.search_user.side_effect = UserNotFoundError()
+async def test_search_user_on_each_cts_not_found(
+    bot: Bot,
+) -> None:
+    # - Arrange -
+    bot.search_user_by_huid = AsyncMock(side_effect=UserNotFoundError("not found"))
 
-    with pytest.raises(UserNotFoundError):
-        await search_user_on_each_cts(bot_mock, user_huid, bot_accounts)
+    # - Act -
+    found_user = await search_user_on_each_cts(bot, UUID("86c4814b-feee-4ff0-b04d-4b3226318078"))
 
-    bot_mock.search_user.assert_awaited_with(credentials, user_huid=user_huid)
+    # - Assert -
+    assert found_user is None
+
+
+async def test_search_user_on_each_cts_suceed(
+    bot: Bot,
+) -> None:
+    # - Arrange -
+    user = UserFromSearch(
+        huid=UUID("86c4814b-feee-4ff0-b04d-4b3226318078"),
+        ad_login=None,
+        ad_domain=None,
+        username="Test User",
+        company=None,
+        company_position=None,
+        department=None,
+        emails=[],
+    )
+
+    bot.search_user_by_huid = AsyncMock(return_value=user)
+
+    # - Act -
+    found_user, bot_account = await search_user_on_each_cts(bot, UUID("86c4814b-feee-4ff0-b04d-4b3226318078"))
+
+    # - Assert -
+    assert found_user is user
+    assert bot_account is list(bot.bot_accounts)[0]
