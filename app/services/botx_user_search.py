@@ -1,13 +1,9 @@
 """Module for user searching on cts."""
 
-from typing import List, Tuple
+from typing import Optional, Tuple
 from uuid import UUID
 
-from botx import Bot, SendingCredentials
-from botx.clients.methods.errors.user_not_found import UserNotFoundError
-from botx.models.users import UserFromSearch
-
-from app.settings.environments.base import BotAccount
+from pybotx import Bot, BotAccount, UserFromSearch, UserNotFoundError
 
 
 class UserIsBotError(Exception):
@@ -15,23 +11,23 @@ class UserIsBotError(Exception):
 
 
 async def search_user_on_each_cts(
-    bot: Bot, user_huid: UUID, bot_accounts: List[BotAccount]
-) -> Tuple[UserFromSearch, str]:
+    bot: Bot, huid: UUID
+) -> Optional[Tuple[UserFromSearch, BotAccount]]:
     """Search user by huid on all cts on which bot is registered.
 
     return type: tuple of UserFromSearch instance and host.
     """
-    for server in bot_accounts:
-        credentials = SendingCredentials(host=server.host, bot_id=server.bot_id)
+
+    for bot_account in bot.bot_accounts:
         try:
-            user = await bot.search_user(credentials, user_huid=user_huid)
+            user = await bot.search_user_by_huid(bot_id=bot_account.id, huid=huid)
         except UserNotFoundError:
             continue
 
-        name = user.name.lower()
+        name = user.username.lower()
         if name.endswith("bot") or name.endswith("бот"):  # TODO: user_kind
-            raise UserIsBotError()
+            raise UserIsBotError
 
-        return user, server.host
+        return user, bot_account
 
-    raise UserNotFoundError
+    return None

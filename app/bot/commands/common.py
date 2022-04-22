@@ -2,61 +2,65 @@
 
 from os import environ
 
-from botx import Bot, Collector, Message
+from pybotx import (
+    Bot,
+    BubbleMarkup,
+    ChatCreatedEvent,
+    HandlerCollector,
+    IncomingMessage,
+    StatusRecipient,
+)
 
-from app.bot.commands.user.create_task import TaskCreationEnum, fsm
 from app.resources import strings
-from app.schemas.task import TaskInCreation
-from app.services.answers.common import chat_created_message, default_message
-from app.services.answers.task_from_forward import get_decision_create_task_message
 
-collector = Collector()
+collector = HandlerCollector()
 
 
-@collector.default(include_in_status=False)
-async def default_handler(message: Message, bot: Bot) -> None:
-    """Run if command not found."""
-    if message.is_forward:
-        await bot.send(get_decision_create_task_message(message))
-        await fsm.change_state(
-            message,
-            TaskCreationEnum.DECISION_CREATE_TASK,
-            forward_data=message.command.body,
-            task=TaskInCreation(title=""),
-        )
-    else:
-        await bot.send(default_message(message))
+@collector.default_message_handler
+async def default_handler(
+    message: IncomingMessage,
+    bot: Bot,
+) -> None:
+    """Run if command handler not found."""
+
+    bubbles = BubbleMarkup()
+    bubbles.add_button(command="/создать", label=strings.CREATE_TASK_LABEL)
+    bubbles.add_button(command="/список", label=strings.LIST_TASKS_LABEL)
+
+    await bot.answer_message(body=strings.DEFAULT_MESSAGE, bubbles=bubbles)
 
 
 @collector.chat_created
-async def chat_created(message: Message, bot: Bot) -> None:
+async def chat_created_handler(event: ChatCreatedEvent, bot: Bot) -> None:
     """Send a welcome message and the bot functionality in new created chat."""
-    await bot.send(chat_created_message(message))
+
+    answer_body = strings.CHAT_CREATED_TEMPLATE.format(
+        bot_project_name=strings.BOT_DISPLAY_NAME
+    )
+    bubbles = BubbleMarkup()
+    bubbles.add_button(command="/создать", label=strings.CREATE_TASK_LABEL)
+
+    await bot.answer_message(answer_body, bubbles=bubbles)
 
 
-@collector.handler(
-    command="/help", name="help", description=strings.HELP_COMMAND_DESCRIPTION
-)
-async def show_help(message: Message, bot: Bot) -> None:
-    """Справка по командам."""
-    status = await message.bot.status()
+@collector.command("/help", description="Get available commands")
+async def help_handler(message: IncomingMessage, bot: Bot) -> None:
+    """Show commands list."""
 
-    # For each public command:
-    # * collect full description or
-    # * collect short description like in status or
-    # * skip command without any description
-    commands = []
-    for command in status.result.commands:
-        command_handler = message.bot.handler_for(command.name)
-        description = command_handler.full_description or command_handler.description
-        if description:
-            commands.append((command.body, description))
+    status_recipient = StatusRecipient.from_incoming_message(message)
 
-    text = strings.HELP_COMMAND_MESSAGE_TEMPLATE.format(commands=commands)
-    await bot.answer_message(text, message)
+    status = await bot.get_status(status_recipient)
+    command_map = dict(sorted(status.items()))
+
+    answer_body = "\n".join(
+        f"`{command}` -- {description}" for command, description in command_map.items()
+    )
+
+    await bot.answer_message(answer_body)
 
 
-@collector.hidden(command="/_debug:git-commit-sha")
-async def git_commit_sha(message: Message, bot: Bot) -> None:
+@collector.command("/_debug:git-commit-sha", visible=False)
+async def git_commit_sha(message: IncomingMessage, bot: Bot) -> None:
     """Show git commit SHA."""
-    await bot.answer_message(environ.get("GIT_COMMIT_SHA", "<undefined>"), message)
+
+    await bot.answer_message(environ.get("GIT_COMMIT_SHA", "<undefined>"))
