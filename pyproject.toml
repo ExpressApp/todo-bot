@@ -2,7 +2,7 @@
 
 [tool.poetry]
 name = "todo-bot"
-version = "2.0.0"
+version = "2.0.2"
 description = "TODO"
 authors = []
 
@@ -11,9 +11,9 @@ authors = []
 python = ">=3.8,<3.10"
 
 pybotx-smartapp-rpc = "~0.4.2"
-pybotx-smart-logger = "~0.6.8"
-pybotx = "~0.40.0"
-pybotx-fsm = "~0.3.8"
+pybotx-smart-logger = "~0.7.3"
+pybotx = "~0.44.1"
+pybotx-fsm = "~0.4.2"
 
 fastapi = ">=0.70.1,<0.71.0"
 uvicorn = { version = "~0.17.5", extras = ["standart"] }
