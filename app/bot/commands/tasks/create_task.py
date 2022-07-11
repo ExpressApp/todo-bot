@@ -162,7 +162,10 @@ async def waiting_task_approve_handler(message: IncomingMessage, bot: Bot) -> No
         await bot.send(message=get_status_message(message, strings.SUCCESS_TITLE))
 
     elif message.body == strings.CANCEL_TASK_COMMAND:
-        await message.state.fsm.change_state(CreateTaskStates.WAITING_TASK_TITLE)
+        await message.state.fsm.change_state(
+            CreateTaskStates.WAITING_TASK_TITLE,
+            task=TaskInCreation(user_huid=message.sender.huid),
+        )
         if attachment.file_storage_id:
             await file_storage.remove(attachment.file_storage_id)
         await bot.answer_message(
