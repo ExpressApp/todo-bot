@@ -23,7 +23,7 @@ ENV VENV_PATH=/home/$APP_USER/.venv/bin
 ENV USER_PATH=/home/$APP_USER/.local/bin
 ENV PATH="$VENV_PATH:$USER_PATH:$PATH"
 
-RUN pip install --user --no-cache-dir poetry==1.1.13 && \
+RUN pip install --user --no-cache-dir poetry==1.3.1 && \
   poetry config virtualenvs.in-project true
 
 COPY poetry.lock pyproject.toml ./
