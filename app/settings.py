@@ -4,16 +4,43 @@ from typing import Any, List
 from uuid import UUID
 
 from pybotx import BotAccountWithSecret
-from pydantic import BaseSettings, validator
+from pydantic import BaseSettings
 
 
 class AppSettings(BaseSettings):
     class Config:  # noqa: WPS431
         env_file = ".env"
 
+        @classmethod
+        def parse_env_var(cls, field_name: str, raw_val: str) -> Any:
+            if field_name == "BOT_CREDENTIALS":
+                if not raw_val:
+                    return []
+
+                return [
+                    cls._build_credentials_from_string(credentials_str)
+                    for credentials_str in raw_val.replace(",", " ").split()
+                ]
+
+            return cls.json_loads(raw_val)  # type: ignore
+
+        @classmethod
+        def _build_credentials_from_string(
+            cls, credentials_str: str
+        ) -> BotAccountWithSecret:
+            credentials_str = credentials_str.replace("|", "@")
+            assert credentials_str.count("@") == 2, "Have you forgot to add `bot_id`?"
+
+            host, secret_key, bot_id = [
+                str_value.strip() for str_value in credentials_str.split("@")
+            ]
+            return BotAccountWithSecret(
+                id=UUID(bot_id), host=host, secret_key=secret_key
+            )
+
     # TODO: Change type to `list[BotAccountWithSecret]` after closing:
     # https://github.com/samuelcolvin/pydantic/issues/1458
-    BOT_CREDENTIALS: Any
+    BOT_CREDENTIALS: List[BotAccountWithSecret]
 
     # base kwargs
     DEBUG: bool = False
@@ -24,33 +51,6 @@ class AppSettings(BaseSettings):
 
     # redis
     REDIS_DSN: str
-
-    @validator("BOT_CREDENTIALS", pre=True)
-    @classmethod
-    def parse_bot_credentials(cls, raw_credentials: Any) -> List[BotAccountWithSecret]:
-        """Parse bot credentials separated by comma.
-
-        Each entry must be separated by "@" or "|".
-        """
-        if not raw_credentials:
-            raise ValueError("`BOT_CREDENTIALS` can't be empty")
-
-        return [
-            cls._build_credentials_from_string(credentials_str)
-            for credentials_str in raw_credentials.replace(",", " ").split()
-        ]
-
-    @classmethod
-    def _build_credentials_from_string(
-        cls, credentials_str: str
-    ) -> BotAccountWithSecret:
-        credentials_str = credentials_str.replace("|", "@")
-        assert credentials_str.count("@") == 2, "Have you forgot to add `bot_id`?"
-
-        host, secret_key, bot_id = [
-            str_value.strip() for str_value in credentials_str.split("@")
-        ]
-        return BotAccountWithSecret(id=UUID(bot_id), host=host, secret_key=secret_key)
 
 
 settings = AppSettings()

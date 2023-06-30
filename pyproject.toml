@@ -11,7 +11,7 @@ authors = []
 python = ">=3.8,<3.10"
 
 pybotx-smart-logger = "~0.10.1"
-pybotx = "~0.55.2"
+pybotx = "0.55.2"
 pybotx-fsm = "~0.4.2"
 
 fastapi = "0.95.2"
@@ -24,7 +24,7 @@ pydantic = { version = "~1.10.5", extras = ["dotenv"] }
 
 alembic = "~1.7.6"
 SQLAlchemy = "~1.4.31"
-asyncpg = "~0.25.0"  # DB backend for application
+asyncpg = "0.26.0"  # DB backend for application
 psycopg2-binary = "~2.9.2"  # DB backend for alembic (migration tool)
 importlib-resources = { version = "^5.4.0", python = "<3.9" }
 zipp = { version = "^3.7.0", python = "<3.9" }

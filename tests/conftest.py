@@ -1,5 +1,6 @@
+import logging
 from http import HTTPStatus
-from typing import Any, AsyncGenerator, Awaitable, Callable, Generator, List, Optional
+from typing import Any, AsyncGenerator, Callable, Generator, List, Optional
 from unittest.mock import AsyncMock
 from uuid import UUID, uuid4
 
@@ -19,8 +20,9 @@ from pybotx import (
     UserSender,
     lifespan_wrapper,
 )
-from pybotx.models.attachments import AttachmentDocument
-from pybotx.models.commands import BotCommand
+from pybotx.logger import logger
+from pybotx.models.attachments import IncomingFileAttachment
+from pybotx_fsm import FSM
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.caching.redis_repo import RedisRepo
@@ -29,41 +31,47 @@ from app.settings import settings
 
 
 @pytest.fixture
-def db() -> Generator:
+def db_migrations() -> Generator:
     alembic_config.main(argv=["upgrade", "head"])
     yield
     alembic_config.main(argv=["downgrade", "base"])
 
 
+@pytest.hookimpl(trylast=True)
+def pytest_collection_modifyitems(items: List[pytest.Function]) -> None:
+    # We can't use autouse, because it appends fixture to the end
+    # but session from db_session fixture must be closed before migrations downgrade
+    for item in items:
+        item.fixturenames = ["db_migrations"] + item.fixturenames
+
+
 @pytest.fixture
-async def db_session(bot: Bot) -> AsyncSession:
+async def db_session(bot: Bot) -> AsyncGenerator[AsyncSession, None]:
     async with bot.state.db_session_factory() as session:
         yield session
 
 
+@pytest.fixture()
+async def fsm_session(
+    bot: Bot,
+    incoming_message_factory: Callable[..., IncomingMessage],
+) -> AsyncGenerator[FSM, None]:
+    message = incoming_message_factory()
+    fsm_session = FSM(bot.state.redis_repo, message)
+
+    async with lifespan_wrapper(bot):
+        yield fsm_session
+
+    await fsm_session.drop_state()
+
+
 @pytest.fixture
 async def redis_repo(bot: Bot) -> RedisRepo:
-    yield bot.state.redis_repo
-    
-
-@pytest.fixture
-async def fsm_session(bot: Bot) -> None:
-    yield None
-    await bot.state.redis_repo.delete("fsm:*")
+    return bot.state.redis_repo
 
 
-@pytest.hookimpl(trylast=True)
-def pytest_collection_modifyitems(items: List[pytest.Function]) -> None:
-    for item in items:
-        if item.get_closest_marker("db"):
-            item.fixturenames = ["db"] + item.fixturenames
-
-
-def mock_authorization(
-    host: str,
-    bot_id: UUID,
-) -> None:
-    respx.get(f"https://{host}/api/v2/botx/bots/{bot_id}/token",).mock(
+def mock_authorization() -> None:
+    respx.route(method="GET", path__regex="/api/v2/botx/bots/.*/token").mock(
         return_value=httpx.Response(
             HTTPStatus.OK,
             json={
@@ -79,15 +87,15 @@ async def bot(
     respx_mock: Callable[..., Any],  # We can't apply pytest mark to fixture
 ) -> AsyncGenerator[Bot, None]:
     fastapi_app = get_application()
-    built_bot = fastapi_app.state.bot
 
-    for bot_account in built_bot.bot_accounts:
-        mock_authorization(bot_account.host, bot_account.id)
-
-    built_bot.answer_message = AsyncMock(return_value=uuid4())
-    built_bot.send = AsyncMock(return_value=uuid4())
+    mock_authorization()
 
     async with LifespanManager(fastapi_app):
+        built_bot = fastapi_app.state.bot
+
+        built_bot.answer_message = AsyncMock(return_value=uuid4())
+        built_bot.send = AsyncMock(return_value=uuid4())
+
         yield built_bot
 
 
@@ -102,17 +110,25 @@ def host() -> str:
 
 
 @pytest.fixture
+def user_huid() -> UUID:
+    return UUID("cd069aaa-46e6-4223-950b-ccea42b89c06")
+
+
+@pytest.fixture
 def incoming_message_factory(
     bot_id: UUID,
+    user_huid: UUID,
     host: str,
 ) -> Callable[..., IncomingMessage]:
     def factory(
         *,
         body: str = "",
+        data: Optional[dict] = None,
+        file: Optional[IncomingFileAttachment] = None,
+        mentions: Optional[MentionList] = None,
+        source_sync_id: Optional[UUID] = None,
         ad_login: Optional[str] = None,
         ad_domain: Optional[str] = None,
-        mentions: Optional[MentionList] = None,
-        attachment: Optional[AttachmentDocument] = None,
     ) -> IncomingMessage:
         return IncomingMessage(
             bot=BotAccount(
@@ -120,12 +136,15 @@ def incoming_message_factory(
                 host=host,
             ),
             sync_id=uuid4(),
-            source_sync_id=None,
+            source_sync_id=source_sync_id,
             body=body,
-            data={},
+            data=data or {},
+            file=file,
             metadata={},
+            mentions=mentions or MentionList(),
             sender=UserSender(
-                huid=UUID('2c7f7a5e-f2fd-45c4-b0f1-453ed2f34fad'),
+                huid=user_huid,
+                udid=None,
                 ad_login=ad_login,
                 ad_domain=ad_domain,
                 username=None,
@@ -145,24 +164,25 @@ def incoming_message_factory(
                 ),
             ),
             chat=Chat(
-                id=UUID('a57aca87-e90b-4623-8bf2-9fb26adbdaaf'),
+                id=UUID("338dc685-efd7-49ba-ac64-7bcb38fdf099"),
                 type=ChatTypes.PERSONAL_CHAT,
             ),
-            mentions=mentions,
-            file=attachment,
             raw_command=None,
         )
 
     return factory
 
 
-@pytest.fixture
-async def execute_bot_command() -> Callable[[Bot, BotCommand], Awaitable[None]]:
-    async def executor(
-        bot: Bot,
-        command: BotCommand,
-    ) -> None:
-        async with lifespan_wrapper(bot):
-            bot.async_execute_bot_command(command)
+@pytest.fixture()
+def loguru_caplog(
+    caplog: pytest.LogCaptureFixture,
+) -> Generator[pytest.LogCaptureFixture, None, None]:
+    # https://github.com/Delgan/loguru/issues/59
 
-    return executor
+    class PropogateHandler(logging.Handler):  # noqa: WPS431
+        def emit(self, record: logging.LogRecord) -> None:
+            logging.getLogger(record.name).handle(record)
+
+    handler_id = logger.add(PropogateHandler(), format="{message}")
+    yield caplog
+    logger.remove(handler_id)
