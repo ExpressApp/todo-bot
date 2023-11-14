@@ -75,7 +75,7 @@ test:
   tags:
     - docker
   services:
-    - postgres:11.4-alpine
+    - postgres:11.22-alpine
     - redis:6.0.1-alpine
   cache: *cache_dependencies
   variables:
