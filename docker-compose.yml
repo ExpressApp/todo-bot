@@ -22,7 +22,7 @@ services:
         max-file: "10"
 
   postgres:
-    image: postgres:13.2-alpine
+    image: postgres:13.14-alpine
     container_name: todo-bot-postgres
     environment:
       - POSTGRES_USER=postgres
