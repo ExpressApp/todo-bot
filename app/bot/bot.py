@@ -1,6 +1,6 @@
 """Configuration for bot instance."""
 
-from pybotx import Bot
+from pybotx import Bot, CallbackRepoProto
 from pybotx_fsm import FSMMiddleware
 
 from app.bot.commands import common
@@ -10,7 +10,7 @@ from app.bot.middlewares.smart_logger import smart_logger_middleware
 from app.settings import settings
 
 
-def get_bot() -> Bot:
+def get_bot(callback_repo: CallbackRepoProto) -> Bot:
     return Bot(
         collectors=[
             common.collector,
@@ -26,4 +26,5 @@ def get_bot() -> Bot:
                 [create_task.fsm, get_tasks.fsm], state_repo_key="redis_repo"
             ),
         ],
+        callback_repo=callback_repo,
     )
