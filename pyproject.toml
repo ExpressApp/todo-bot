@@ -46,7 +46,7 @@ pytest-asyncio = "~0.18.2"
 pytest-cov = "~3.0.0"
 
 asgi-lifespan = "~1.0.1"
-requests = "~2.31.0"
+requests = "~2.33.0"
 respx = "~0.19.2"
 
 markdown = "3.3.6"  # https://github.com/python-poetry/poetry/issues/4777
